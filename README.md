@@ -75,13 +75,15 @@ node src/test_learners.js  # sanity-check the five learners + drift detectors
 Reproducing the embeddings from scratch (needs the 408 MB CLIP checkpoint) is
 documented in [`src/README.md`](src/README.md).
 
-## Next step (flagged by the source session)
+## Status
 
-Every learner currently has **one clock**. To demonstrate the partition escape
-from Law I, add a **two-clock learner** (fast head + slow anchored body, updated
-at different frequencies), then a **transformer mode** contrasting a growing
-context against a LoRA update — putting classic ML, deep nets, and transformers
-in one artifact.
+- **Two-clock learner** (partition escape from Law I) — **done**. Slow centroid +
+  fast leaky logistic; a genuine irreducible partition (`src/learners.js`),
+  measured over 200 worlds in `src/twoclock_demo.js`, and raced live in the game
+  as a first-class fifth learner. See [`docs/demonstrator-build-notes.md`](docs/demonstrator-build-notes.md).
+- **Next: transformer mode** — a fourth game mode contrasting a growing context
+  against a LoRA-style weight update, to put classic ML, deep nets, and
+  transformers in one artifact.
 
 ## Provenance
 

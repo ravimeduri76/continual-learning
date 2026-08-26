@@ -9,7 +9,7 @@
   --ink:#0F1520; --ink-2:#313B4D; --muted:#5D6779; --faint:#8A93A3;
   --rule:#D7DCE4; --rule-strong:#B9C1CD;
   --slow:#2F4A93; --fast:#C04A2E; --good:#1E6F55; --warn:#9A6510;
-  --c-sgd:#C04A2E; --c-ftrl:#9A6510; --c-proto:#1E6F55; --c-replay:#2F4A93; --c-adapter:#6A3E8F;
+  --c-sgd:#C04A2E; --c-ftrl:#9A6510; --c-proto:#1E6F55; --c-replay:#2F4A93; --c-adapter:#6A3E8F; --c-twoclock:#0E7B8B;
   --shadow:0 1px 2px rgba(15,21,32,.05), 0 10px 28px -16px rgba(15,21,32,.22);
   --chip:#F2F1EC;
 }
@@ -18,7 +18,7 @@
   --ink:#E6EAF1; --ink-2:#C2CAD6; --muted:#8D97A6; --faint:#6B7484;
   --rule:#262E3A; --rule-strong:#3A4453;
   --slow:#86A6EE; --fast:#EE8B70; --good:#63C5A3; --warn:#D9AE5C;
-  --c-sgd:#EE8B70; --c-ftrl:#D9AE5C; --c-proto:#63C5A3; --c-replay:#86A6EE; --c-adapter:#BE96DE;
+  --c-sgd:#EE8B70; --c-ftrl:#D9AE5C; --c-proto:#63C5A3; --c-replay:#86A6EE; --c-adapter:#BE96DE; --c-twoclock:#57C3D6;
   --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 32px -18px rgba(0,0,0,.8);
 }}
 :root[data-theme="dark"]{
@@ -26,7 +26,7 @@
   --ink:#E6EAF1; --ink-2:#C2CAD6; --muted:#8D97A6; --faint:#6B7484;
   --rule:#262E3A; --rule-strong:#3A4453;
   --slow:#86A6EE; --fast:#EE8B70; --good:#63C5A3; --warn:#D9AE5C;
-  --c-sgd:#EE8B70; --c-ftrl:#D9AE5C; --c-proto:#63C5A3; --c-replay:#86A6EE; --c-adapter:#BE96DE;
+  --c-sgd:#EE8B70; --c-ftrl:#D9AE5C; --c-proto:#63C5A3; --c-replay:#86A6EE; --c-adapter:#BE96DE; --c-twoclock:#57C3D6;
   --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 32px -18px rgba(0,0,0,.8);
 }
 
@@ -192,7 +192,7 @@ input[type=range]{width:100%; accent-color:var(--slow)}
   <div class="mast-l">
     <div class="lbl kicker">A continual-learning demonstrator</div>
     <h1>The Forgetting Machine</h1>
-    <p class="serif">Four learners watch the same clicks through the same frozen CLIP embeddings. Only one dial differs between them. Then the question changes underneath you — and they come apart in exactly the way the theory says they should.</p>
+    <p class="serif">Five learners watch the same clicks through the same frozen CLIP embeddings. Four differ by a single dial; the fifth runs two clocks at once. Then the question changes underneath you — and they come apart in exactly the way the theory says they should.</p>
   </div>
   <div class="masteq mono">θₖ ← θₖ − <b>ηₖ</b>·<b>Πₖ</b>[ ∇ℒ(θ; <b>𝒟ₜ∪ℛₜ</b>) + λₖ<b>Mₖ</b>(θₖ − <b>aₖ</b>) ]</div>
 </header>
@@ -271,6 +271,8 @@ const META = [
     dial:'pace = one shot, closed form' },
   { id:'replay', nm:'Replay + Fisher anchor',   ac:'var(--c-replay)',
     dial:'evidence + anchor + geometry' },
+  { id:'twoclock', nm:'Two-clock (slow + fast)', ac:'var(--c-twoclock)',
+    dial:'partition · slow centroid + fast head' },
 ];
 const ADAPTER_META = { id:'adapter', nm:'Head + rank-2 adapter', ac:'var(--c-adapter)',
     dial:'locus widened · watch it distort' };
@@ -325,6 +327,7 @@ function rebuild(){
     proto:  { gamma: S.dials.gamma },
   };
   S.learners = CL.makeLearners(S.d, o);
+  S.learners.push(new CL.TwoClock(S.d));   // the partition — a fixed reference the single-clock dials cannot reach
   if (S.dials.adapter) S.learners.push(new CL.AdapterHead(S.d, { eta: S.dials.eta }));
   S.ph = new CL.PageHinkley();
   S.phSeries = [];
@@ -448,7 +451,7 @@ function question(){
     </div>
     <div>
       <div class="railhead">
-        <span class="lbl">the four learners</span>
+        <span class="lbl">the five learners</span>
         <span class="lbl" style="color:var(--faint)">P(you say yes)</span>
       </div>
       <div class="rail">${S.learners.map(m => lcard(m, probs[m.id])).join('')}</div>
@@ -553,6 +556,7 @@ function confWith(learners, set){
 function replayLearners(subset){
   const o = { sgd:{eta:S.dials.eta}, replay:{lambda:S.dials.lambda}, proto:{gamma:S.dials.gamma} };
   const ls = CL.makeLearners(S.d, o);
+  ls.push(new CL.TwoClock(S.d));
   if (S.dials.adapter) ls.push(new CL.AdapterHead(S.d, { eta:S.dials.eta }));
   for (const { i, y } of subset) for (const m of ls) m.observe(S.V[i], y);
   return ls;
@@ -619,7 +623,7 @@ function driftCard(){
     <p class="serif" style="font-size:1.22rem; color:var(--ink)">${M.q2}</p>
     <p class="serif" style="color:var(--ink-2)">${M.drift}</p>
     <div class="note">
-      Everything the four learners believe was fitted to the <em>old</em> question. Nothing tells them
+      Everything the five learners believe was fitted to the <em>old</em> question. Nothing tells them
       it changed — they have to notice. The detector in the rail is watching their running error, and
       the scorecard at the end will measure what each one lost.
     </div>
@@ -641,6 +645,8 @@ function final(){
   });
   const bestRet = rows.slice().sort((a,b)=>b.bwt-a.bwt)[0];
   const bestNew = rows.slice().sort((a,b)=>(b.newAcc-a.newAcc) || (b.newConf-a.newConf))[0];
+  const tc = rows.find(r=>r.m.id==='twoclock');
+  const tcSingle = tc && tc.m.id!==bestRet.m.id && tc.m.id!==bestNew.m.id;
 
   app.innerHTML = `
   <div class="panel panel-p" style="margin-top:26px">
@@ -669,9 +675,17 @@ function final(){
         ? `<b>${bestRet.meta.nm}</b> happened to win on both axes this run — with five test items that is well inside noise. Re-run it, or move the dials below and watch the ordering change.`
         : `<b>${bestRet.meta.nm}</b> retained the old question best (${bestRet.bwt>=0?'+':''}${pct(bestRet.bwt)} backward transfer);
            <b>${bestNew.meta.nm}</b> adapted to the new one best (${pct(bestNew.newAcc)}). That split is not an accident and
-           it is not fixable — it is the conservation law. Within one tier, retention and adaptation trade against
-           a fixed budget. The only way out is to run several tiers at different speeds, which is what every
-           serious 2026 proposal, from sparse memory finetuning to Nested Learning, is actually doing.`}
+           it is not fixable <em>within one tier</em> — it is the conservation law: retention and adaptation trade against
+           a fixed budget. The only way out is to <b>partition</b> — run several tiers at different speeds.
+           That is the <span style="color:var(--c-twoclock)">two-clock</span> learner above: a slow centroid that keeps the
+           old answer and a fast head that chases the new one, updating on different clocks.
+           ${tcSingle
+             ? `This run it sat at ${pct(tc.oldNow)} old / ${pct(tc.newAcc)} new — off both corners, which over many runs
+                is where it lands: non-dominated, most balanced, never the specialist. Five test items are noisy, so
+                re-run or move the dials; the averaged frontier is in <span class="mono">twoclock_demo.js</span>.`
+             : `It even took a corner this run — noisy at five test items, but re-run it and watch it settle into the
+                balanced middle no single-clock learner can hold.`}
+           Partitioning is what every serious 2026 proposal, from sparse memory finetuning to Nested Learning, is actually doing.`}
     </div>
     ${driftGauge()}
 
@@ -709,7 +723,8 @@ function final(){
       roughly the last ten answers and γ=1.00 means it answers to all of them and can never turn.
       The adapter is the one control that widens the <em>Locus</em> dial — it lets gradients reach the
       representation instead of only the head. Expect it to help on the newest items and hurt on the oldest.
-      That is Kumar et al.'s LP-FT result, at a scale you can watch.
+      That is Kumar et al.'s LP-FT result, at a scale you can watch. The two-clock row does not move with any
+      of these sliders — it has no single clock to turn, which is exactly the point of a partition.
     </p>
     <div style="display:flex; gap:10px; margin-top:22px; flex-wrap:wrap">
       <button class="btn ghost" id="again">Play again — same mode</button>

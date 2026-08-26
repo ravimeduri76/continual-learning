@@ -135,6 +135,8 @@ traces never merge, so nothing is claimed about the consolidation gap.
    LM predict, and contrast in-context adaptation (context grows) against a LoRA-style update
    (weights move). That would put all three regimes in one artifact.
 2. ~~**A second timescale.**~~ **Done** — see "Two-clock learner" above (`learners.js`,
-   `twoclock_demo.js`). Not yet raced live in the game UI; that is the next wiring step.
+   `twoclock_demo.js`), and now raced live in the game as a first-class fifth learner (teal).
+   It rides on its own defaults — the η/λ/γ dials cannot reach it, which is the point of a
+   partition — and the scorecard note now resolves the conservation law onto it.
 3. **Uncertainty sampling** as an optional item selector, to show how much of the sample
    efficiency gap is the learner and how much is the curriculum.
