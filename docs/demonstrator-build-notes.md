@@ -66,6 +66,45 @@ the new concept (68–70%). SHAPES is milder but the same ordering.
 **This is the headline result: replay retains best and adapts worst; plain SGD does the exact
 opposite. Law I (conservation), made clickable.**
 
+## Two-clock learner — the partition of Law I (added after the Cowork session)
+
+A fifth learner, `TwoClock` in `learners.js`, built to *demonstrate* the escape the framework
+only asserted. It partitions the predictor into two tiers of **different geometry**, so it does
+not reduce to a single head:
+
+```
+score(x) = τ · (cos(x, μ₊) − cos(x, μ₋))   ← SLOW: closed-form centroid, γ=1, never forgets
+         + wF·x + bF                          ← FAST: leaky logistic, η=0.9, ρ=0.5 → N_eff = 2
+```
+
+**Why this shape and not the obvious one.** The first attempt was a slow body + fast head that
+were *both linear in x* and summed: `w_s + w_f`. That collapses to one weight vector — one clock
+in disguise — and the averaged sweep confirmed it sits *inside* the frontier, dominated by FTRL.
+A centroid score is nonlinear in `x` (normalisation, separate ± means), so slow+fast here is a
+genuine partition. This is the lesson of Invariant 1 in code: the escape requires the tiers to be
+irreducible, not just differently-tuned.
+
+**Measured** (`twoclock_demo.js`, drift protocol averaged over 200 independent worlds — a single
+16-click draw is far too noisy at 2.5% test granularity to read a frontier):
+
+```
+learner                 A before   A after    B after   retention × adaptation
+Online logistic (SGD)     71.9%     63.5%     67.5%        0.428
+FTRL-Proximal             77.1%     67.6%     69.1%        0.467
+Prototype centroid        80.7%     71.0%     67.0%        0.476
+Replay + Fisher           80.3%     76.9%     61.3%        0.472
+Two-clock (slow+fast)     80.7%     70.6%     67.6%        0.477   ← best product, non-dominated
+```
+
+**Honest reading.** The two-clock is Pareto **non-dominated**, strictly **dominates the SGD
+control**, ties Prototype for **fastest initial learning**, and has the **highest
+retention×adaptation product** — the only learner top-group on *both* axes, while every
+single-clock learner is strong on one and weak on the other. It does **not** blow the frontier
+open: at 16 clicks with linear readouts it *joins* the frontier rather than pushing it outward.
+That is faithful to the framework — the Continuum Memory System escape (arXiv:2512.24695) shows
+its largest gains at depth/scale, not at this size. It also does not touch Invariant 5: the two
+traces never merge, so nothing is claimed about the consolidation gap.
+
 ## Verification performed
 
 - `reference.py` — FTRL's materialised `w` equals the numerical argmin of its stated objective
@@ -95,8 +134,7 @@ opposite. Law I (conservation), made clickable.**
 1. **Transformer mode.** The natural fourth mode: show the player a prompt, let an actual small
    LM predict, and contrast in-context adaptation (context grows) against a LoRA-style update
    (weights move). That would put all three regimes in one artifact.
-2. **A second timescale.** Right now every learner has one clock. Adding a two-tier learner —
-   fast head + slow anchored body, updating at different frequencies — would demonstrate the
-   partition escape from Law I directly, rather than only asserting it.
+2. ~~**A second timescale.**~~ **Done** — see "Two-clock learner" above (`learners.js`,
+   `twoclock_demo.js`). Not yet raced live in the game UI; that is the next wiring step.
 3. **Uncertainty sampling** as an optional item selector, to show how much of the sample
    efficiency gap is the learner and how much is the curriculum.

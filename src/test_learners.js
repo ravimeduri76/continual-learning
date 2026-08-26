@@ -90,6 +90,26 @@ console.log('ADWIN eps_cut(9,7) =', L.adwinEpsCut(9, 7).toFixed(3), '- unreachab
 console.log('\n--- dial readouts ---');
 for (const m of r.ls) console.log(`  ${m.id.padEnd(8)} N_eff=${m.nEff().toFixed(1).padStart(6)}  last |Δw|=${m.moved.toFixed(3)}`);
 
+console.log('\n--- TWO-CLOCK: partition of Law I (single draw — noisy) ---');
+{
+  // A single 16-example draw is too noisy to judge a Pareto escape (40-item
+  // tests, 2.5% granularity). This block only smoke-tests that the learner runs
+  // and reports its two clocks; the averaged frontier claim lives in
+  // twoclock_demo.js, which means over many worlds.
+  const cur = { i: 0 };
+  const tc = new L.TwoClock(D);
+  const act1 = balancedDraw(ITEMS, CONCEPT_A, 9, cur);
+  const test1 = balancedDraw(ITEMS, CONCEPT_A, 40, cur);
+  const act2 = balancedDraw(ITEMS, CONCEPT_B, 7, cur);
+  const test2 = balancedDraw(ITEMS, CONCEPT_B, 40, cur);
+  const accOn = (m, data) => data.filter(({ it, y }) => ((m.prob(it.x) >= .5 ? 1 : 0) === y)).length / data.length;
+  for (const { it, y } of act1) tc.observe(it.x, y);
+  const before = accOn(tc, test1);
+  for (const { it, y } of act2) tc.observe(it.x, y);
+  console.log(`  old before=${pct(before)}  old after=${pct(accOn(tc, test1))}  new after=${pct(accOn(tc, test2))}`);
+  console.log(`  clocks:  fast N_eff=${tc.nEffFast().toFixed(1)}  slow N_eff=${tc.nEffSlow().toFixed(1)}`);
+}
+
 console.log('\n--- LP-FT: unfrozen rank-2 adapter vs frozen backbone ---');
 {
   const cur = { i: 300 };

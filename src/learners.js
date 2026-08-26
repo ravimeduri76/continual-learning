@@ -240,6 +240,67 @@ class AdapterHead {
   nEff() { return 1 / this.eta; }
 }
 
+/* ==================================================================
+   6. TWO-CLOCK  (slow centroid body + fast leaky logistic head)
+   The escape from Law I. Every learner above has ONE clock, so it can
+   only slide along the retention/adaptation frontier. This one partitions
+   the predictor into two tiers of DIFFERENT geometry — a genuine
+   partition, not one head in disguise:
+
+     score(x) = tau (cos(x,μ₊) − cos(x,μ₋))   ← SLOW: closed-form centroid,
+              + wF·x + bF                        gamma≈1, answers to every
+                                                 example, order-invariant.
+                                               ← FAST: leaky logistic on the
+                                                 slow tier's RESIDUAL, high η,
+                                                 decays → N_eff ≈ 2.
+
+   Why the partition is real: two linear heads summed collapse to w_s+w_f —
+   one head, one clock, stuck on the frontier. A centroid score is nonlinear
+   in x (normalisation, separate ± means), so this sum does NOT reduce to a
+   single logistic. Slow keeps the old concept; fast chases the new one.
+   The Continuum Memory System shape (arXiv:2512.24695) at watchable scale.
+   It does NOT close the consolidation gap (Invariant 5): the two traces
+   never merge into one store — retention lives in μ, adaptation in wF, and
+   the fast trace is simply discarded as it leaks.
+   ================================================================== */
+class TwoClock {
+  constructor(d, {
+    etaF = 0.90, rhoF = 0.5,          // fast head: big step then leak -> N_eff = 2
+    gammaS = 1.0, tau = 8.0,          // slow centroid: gamma=1 -> never forgets
+  } = {}) {
+    this.id = 'twoclock'; this.d = d;
+    this.etaF = etaF; this.rhoF = rhoF; this.gammaS = gammaS; this.tau = tau;
+    this.mp = zeros(d); this.mn = zeros(d); this.np = 0; this.nn = 0;   // slow
+    this.wF = zeros(d); this.bF = 0;                                     // fast
+    this.t = 0; this.moved = 0;
+  }
+  _slow(x) {
+    const a = this.np > 0 ? cosine(x, this.mp) : 0;
+    const b = this.nn > 0 ? cosine(x, this.mn) : 0;
+    return this.tau * (a - b);
+  }
+  score(x) { return this._slow(x) + dot(this.wF, x) + this.bF; }
+  prob(x) { return sigmoid(this.score(x)); }
+  observe(x, y) {
+    const beforeF = this.wF.slice();
+    this.t++;
+    // Error at arrival, before either tier adapts to this point.
+    const errPre = sigmoid(this.score(x)) - y;
+    // FAST head: descend the residual the slow centroid did not already explain,
+    // then leak so it holds only recent evidence.
+    for (let i = 0; i < this.d; i++) this.wF[i] = this.rhoF * (this.wF[i] - this.etaF * errPre * x[i]);
+    this.bF = this.rhoF * (this.bF - this.etaF * errPre);
+    // SLOW body: closed-form centroid, gamma=1 answers to everything it ever saw.
+    const g = this.gammaS, tgt = y === 1 ? this.mp : this.mn;
+    for (let i = 0; i < this.d; i++) tgt[i] = g * tgt[i] + x[i];
+    if (y === 1) this.np = g * this.np + 1; else this.nn = g * this.nn + 1;
+    this.moved = l2diff(beforeF, this.wF);
+  }
+  nEffFast() { return 1 / (1 - this.rhoF); }
+  nEffSlow() { return this.gammaS >= 1 ? (this.np + this.nn) : 1 / (1 - this.gammaS); }
+  nEff() { return this.nEffSlow(); }                        // headline = the long clock
+}
+
 /* ------------------------------- utils ------------------------------- */
 function clip(v, cap) { let s = 0; for (let i = 0; i < v.length; i++) s += v[i] * v[i]; s = Math.sqrt(s); if (s > cap) { const f = cap / s; for (let i = 0; i < v.length; i++) v[i] *= f; } }
 function l2diff(a, b) { let s = 0; for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; s += d * d; } return Math.sqrt(s); }
@@ -292,9 +353,10 @@ const LEARNER_META = {
   proto:   { name: 'Prototype centroid',    short: 'Prototype', dial: 'Pace = one shot, closed form' },
   replay:  { name: 'Replay + Fisher anchor',short: 'Replay',    dial: 'Evidence + Anchor + Geometry' },
   adapter: { name: 'Head + rank-2 adapter', short: 'Adapter',   dial: 'Locus widened — watch it distort' },
+  twoclock:{ name: 'Two-clock (fast+slow)',  short: 'TwoClock',  dial: 'Partition — two clocks, escapes Law I' },
 };
 
 if (typeof module !== 'undefined') {
-  module.exports = { SGDLogistic, FTRLProximal, Prototype, ReplayEWC, AdapterHead,
+  module.exports = { SGDLogistic, FTRLProximal, Prototype, ReplayEWC, AdapterHead, TwoClock,
                      PageHinkley, adwinEpsCut, makeLearners, LEARNER_META, sigmoid, dot, mulberry32 };
 }
