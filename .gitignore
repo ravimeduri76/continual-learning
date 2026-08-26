@@ -1,0 +1,17 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+# Data / model artifacts (never committed raw)
+data/
+runs/
+output/
+*.pt
+*.bin
+*.npz
+# OS
+.DS_Store
+# Node
+node_modules/
+dist/
