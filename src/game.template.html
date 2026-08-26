@@ -1,0 +1,741 @@
+<title>The Forgetting Machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Spline+Sans+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF0F4; --surface-3:#E3E8EF;
+  --ink:#0F1520; --ink-2:#313B4D; --muted:#5D6779; --faint:#8A93A3;
+  --rule:#D7DCE4; --rule-strong:#B9C1CD;
+  --slow:#2F4A93; --fast:#C04A2E; --good:#1E6F55; --warn:#9A6510;
+  --c-sgd:#C04A2E; --c-ftrl:#9A6510; --c-proto:#1E6F55; --c-replay:#2F4A93; --c-adapter:#6A3E8F;
+  --shadow:0 1px 2px rgba(15,21,32,.05), 0 10px 28px -16px rgba(15,21,32,.22);
+  --chip:#F2F1EC;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --ground:#0D1117; --surface:#141A23; --surface-2:#1B222D; --surface-3:#232C39;
+  --ink:#E6EAF1; --ink-2:#C2CAD6; --muted:#8D97A6; --faint:#6B7484;
+  --rule:#262E3A; --rule-strong:#3A4453;
+  --slow:#86A6EE; --fast:#EE8B70; --good:#63C5A3; --warn:#D9AE5C;
+  --c-sgd:#EE8B70; --c-ftrl:#D9AE5C; --c-proto:#63C5A3; --c-replay:#86A6EE; --c-adapter:#BE96DE;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 32px -18px rgba(0,0,0,.8);
+}}
+:root[data-theme="dark"]{
+  --ground:#0D1117; --surface:#141A23; --surface-2:#1B222D; --surface-3:#232C39;
+  --ink:#E6EAF1; --ink-2:#C2CAD6; --muted:#8D97A6; --faint:#6B7484;
+  --rule:#262E3A; --rule-strong:#3A4453;
+  --slow:#86A6EE; --fast:#EE8B70; --good:#63C5A3; --warn:#D9AE5C;
+  --c-sgd:#EE8B70; --c-ftrl:#D9AE5C; --c-proto:#63C5A3; --c-replay:#86A6EE; --c-adapter:#BE96DE;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 32px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"Archivo","Helvetica Neue",Arial,sans-serif;
+  font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"Spline Sans Mono",ui-monospace,monospace}
+.serif{font-family:"Newsreader",Georgia,serif}
+h1,h2,h3{margin:0; letter-spacing:-.022em; text-wrap:balance}
+h1{font-size:clamp(2rem,5vw,3.1rem); font-weight:700; letter-spacing:-.035em; line-height:1.03}
+h2{font-size:1.5rem; font-weight:650}
+h3{font-size:1.02rem; font-weight:600}
+p{margin:0 0 .9em}
+a{color:var(--slow)}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--fast); outline-offset:3px; border-radius:4px}
+
+.wrap{max-width:1240px; margin:0 auto; padding:0 22px 90px}
+.lbl{font-family:"Spline Sans Mono",monospace; font-size:.67rem; letter-spacing:.14em;
+     text-transform:uppercase; color:var(--muted); font-weight:600}
+
+/* ---------- masthead ---------- */
+header{padding:52px 0 26px; display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap;
+       border-bottom:1px solid var(--rule)}
+.mast-l{max-width:60ch}
+.kicker{color:var(--fast); margin-bottom:.9rem}
+.kicker::before{content:""; display:inline-block; width:28px; height:2px; background:var(--fast);
+  vertical-align:middle; margin-right:.6rem}
+header p{color:var(--ink-2); font-family:"Newsreader",serif; font-size:1.12rem; margin:.7rem 0 0}
+.masteq{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:12px 15px;
+  font-family:"Spline Sans Mono",monospace; font-size:.76rem; color:var(--muted); white-space:nowrap;
+  overflow-x:auto; box-shadow:var(--shadow)}
+.masteq b{font-weight:600}
+
+/* ---------- layout ---------- */
+.board{display:grid; grid-template-columns:minmax(0,1fr) 344px; gap:26px; margin-top:26px; align-items:start}
+@media (max-width:940px){ .board{grid-template-columns:1fr} }
+
+.panel{background:var(--surface); border:1px solid var(--rule); border-radius:5px; box-shadow:var(--shadow)}
+.panel-p{padding:24px}
+
+/* ---------- progress ---------- */
+.track{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px}
+.pips{display:flex; gap:4px}
+.pip{width:16px; height:5px; border-radius:3px; background:var(--rule-strong); transition:background .2s}
+.pip.done{background:var(--slow)} .pip.now{background:var(--fast)}
+.pip.t{width:9px}
+.actname{font-weight:600; font-size:.92rem}
+
+/* ---------- stage ---------- */
+.stage{display:flex; flex-direction:column; align-items:center; gap:20px; padding:14px 0 4px; min-height:330px; justify-content:center}
+.specimen{
+  width:280px; height:280px; border-radius:6px; background:#F2F1EC;
+  border:1px solid var(--rule); display:flex; align-items:center; justify-content:center;
+  overflow:hidden; position:relative;
+}
+.specimen svg{width:100%; height:100%; display:block}
+.specimen img{width:100%; height:100%; object-fit:contain; padding:26px; background:#fff}
+.person{padding:26px; text-align:center; display:flex; flex-direction:column; gap:10px; justify-content:center; color:#1B2230}
+.person .nm{font-family:"Newsreader",serif; font-size:1.65rem; font-weight:500; line-height:1.15}
+.person .ds{font-size:.9rem; color:#5D6779; line-height:1.4}
+.person .ch{display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:6px}
+.person .ch span{font-family:"Spline Sans Mono",monospace; font-size:.62rem; letter-spacing:.1em;
+  text-transform:uppercase; background:rgba(15,21,32,.06); padding:3px 7px; border-radius:20px; color:#3A4453}
+.caption{font-family:"Spline Sans Mono",monospace; font-size:.72rem; color:var(--faint); letter-spacing:.04em}
+
+.ask{font-family:"Newsreader",serif; font-size:1.35rem; text-align:center; color:var(--ink-2); max-width:34ch}
+.choices{display:flex; gap:12px}
+.btn{
+  border:1px solid var(--rule-strong); background:var(--surface); color:var(--ink);
+  padding:13px 30px; border-radius:4px; font-size:1rem; font-weight:600; cursor:pointer;
+  transition:transform .1s, border-color .15s, background .15s;
+}
+.btn:hover{border-color:var(--ink-2); background:var(--surface-2)}
+.btn:active{transform:translateY(1px)}
+.btn.yes{border-color:var(--good); color:var(--good)}
+.btn.yes:hover{background:var(--good); color:var(--surface); border-color:var(--good)}
+.btn.no{border-color:var(--rule-strong); color:var(--muted)}
+.btn.primary{background:var(--slow); border-color:var(--slow); color:#fff}
+.btn.primary:hover{background:var(--slow); filter:brightness(1.1)}
+.btn.ghost{border-color:var(--rule); color:var(--muted); padding:9px 16px; font-size:.85rem; font-weight:500}
+.kbd{font-family:"Spline Sans Mono",monospace; font-size:.6rem; opacity:.55; margin-left:7px}
+
+/* ---------- learner rail ---------- */
+.rail{display:flex; flex-direction:column; gap:11px}
+.railhead{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px}
+.lcard{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--ac);
+  border-radius:4px; padding:13px 15px 14px; box-shadow:var(--shadow)}
+.lcard .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+.lcard .nm{font-weight:600; font-size:.92rem; color:var(--ink)}
+.lcard .pv{font-family:"Spline Sans Mono",monospace; font-size:.95rem; font-weight:600; color:var(--ac);
+  font-variant-numeric:tabular-nums}
+.lcard .dial{font-family:"Spline Sans Mono",monospace; font-size:.63rem; letter-spacing:.08em;
+  color:var(--faint); text-transform:uppercase; margin-top:2px}
+.bar{height:6px; background:var(--surface-3); border-radius:3px; margin-top:9px; overflow:hidden; position:relative}
+.bar i{display:block; height:100%; background:var(--ac); border-radius:3px; transition:width .28s cubic-bezier(.4,0,.2,1)}
+.bar.mid::after{content:""; position:absolute; left:50%; top:-2px; bottom:-2px; width:1px; background:var(--rule-strong)}
+.lcard .stats{display:flex; gap:14px; margin-top:9px; font-family:"Spline Sans Mono",monospace;
+  font-size:.66rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.lcard .stats b{color:var(--ink-2); font-weight:600}
+.spark{display:block; margin-top:8px; width:100%; height:22px}
+
+/* ---------- results ---------- */
+.grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px}
+.res{margin-top:6px}
+.res table{width:100%; border-collapse:collapse; font-size:.86rem}
+.res th{text-align:left; padding:9px 10px; font-size:.64rem; letter-spacing:.11em; text-transform:uppercase;
+  color:var(--muted); border-bottom:1px solid var(--rule-strong); font-weight:600; white-space:nowrap}
+.res td{padding:10px; border-bottom:1px solid var(--rule); font-variant-numeric:tabular-nums}
+.res td:first-child{font-weight:600}
+.res .num{font-family:"Spline Sans Mono",monospace}
+.dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:8px; vertical-align:1px}
+.pos{color:var(--good)} .neg{color:var(--fast)}
+.tablewrap{overflow-x:auto}
+
+.note{background:var(--surface-2); border-left:3px solid var(--fast); padding:15px 18px; border-radius:0 4px 4px 0;
+  font-family:"Newsreader",serif; font-size:1.02rem; color:var(--ink-2); margin:18px 0}
+.note b{font-family:"Archivo",sans-serif; font-weight:600; color:var(--ink)}
+
+.gauge{display:flex; align-items:center; gap:11px; margin-top:12px}
+.gauge .track2{flex:1; height:7px; background:var(--surface-3); border-radius:4px; position:relative; overflow:hidden}
+.gauge .track2 i{display:block; height:100%; background:var(--warn); transition:width .3s}
+.gauge .track2 u{position:absolute; top:0; bottom:0; width:2px; background:var(--fast); text-decoration:none}
+
+/* dial sliders */
+.dials{display:grid; gap:15px; margin-top:4px}
+.drow{display:grid; grid-template-columns:132px 1fr 62px; gap:12px; align-items:center}
+.drow label{font-family:"Spline Sans Mono",monospace; font-size:.68rem; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted); font-weight:600}
+.drow output{font-family:"Spline Sans Mono",monospace; font-size:.76rem; text-align:right; color:var(--ink-2);
+  font-variant-numeric:tabular-nums}
+input[type=range]{width:100%; accent-color:var(--slow)}
+.switch{display:flex; align-items:center; gap:9px; font-size:.88rem; color:var(--ink-2); cursor:pointer}
+.switch input{accent-color:var(--c-adapter); width:16px; height:16px}
+
+/* mode select */
+.modes{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:18px; margin-top:30px}
+.mode{background:var(--surface); border:1px solid var(--rule); border-radius:5px; padding:0; overflow:hidden;
+  text-align:left; cursor:pointer; box-shadow:var(--shadow); transition:transform .14s, border-color .14s; display:block; width:100%}
+.mode:hover{transform:translateY(-2px); border-color:var(--rule-strong)}
+.mode .thumb{height:118px; background:#F2F1EC; display:flex; align-items:center; justify-content:center; gap:8px;
+  border-bottom:1px solid var(--rule); padding:12px}
+.mode .thumb svg{height:74px; width:74px}
+.mode .thumb img{height:52px; border:1px solid var(--rule)}
+.mode .thumb .pn{font-family:"Newsreader",serif; font-size:1.05rem; color:#3A4453; text-align:center; line-height:1.3}
+.mode .body{padding:17px 19px 19px}
+.mode h3{margin-bottom:5px}
+.mode p{font-size:.87rem; color:var(--muted); margin:0}
+.mode .probe{font-family:"Spline Sans Mono",monospace; font-size:.65rem; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--fast); margin-top:11px; padding-top:10px; border-top:1px solid var(--rule)}
+
+.foot{margin-top:70px; padding-top:22px; border-top:1px solid var(--rule); color:var(--faint);
+  font-size:.82rem; display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap}
+.hide{display:none !important}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important} }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="mast-l">
+    <div class="lbl kicker">A continual-learning demonstrator</div>
+    <h1>The Forgetting Machine</h1>
+    <p class="serif">Four learners watch the same clicks through the same frozen CLIP embeddings. Only one dial differs between them. Then the question changes underneath you — and they come apart in exactly the way the theory says they should.</p>
+  </div>
+  <div class="masteq mono">θₖ ← θₖ − <b>ηₖ</b>·<b>Πₖ</b>[ ∇ℒ(θ; <b>𝒟ₜ∪ℛₜ</b>) + λₖ<b>Mₖ</b>(θₖ − <b>aₖ</b>) ]</div>
+</header>
+
+<div id="app"></div>
+
+<div class="foot">
+  <span>Embeddings: frozen CLIP RN50 (open_clip, CC12M), PCA-reduced. Nothing is sent anywhere — every learner runs in this tab.<br>
+  The framework these dials come from: <a href="https://claude.ai/code/artifact/ba5d0b43-d59b-49e0-b68e-d9919f032db7">Five Dials of Plasticity</a>.</span>
+  <span class="mono" id="ver"></span>
+</div>
+</div>
+
+<script>/*__LEARNERS__*/</script>
+<script id="bundle" type="application/json">/*__BUNDLE__*/</script>
+<script>
+(function(){
+"use strict";
+const B = JSON.parse(document.getElementById('bundle').textContent);
+const app = document.getElementById('app');
+document.getElementById('ver').textContent = 'shapes ' + B.shapes.items.length +
+  ' · flags ' + B.flags.items.length + ' · people ' + B.people.items.length;
+
+/* ---------------- data ---------------- */
+const CACHE = {};
+function decode(mode){
+  if (CACHE[mode]) return CACHE[mode];
+  const m = B[mode];
+  const bin = atob(m.vecs);
+  const q = new Int8Array(bin.length);
+  for (let i=0;i<bin.length;i++) q[i] = (bin.charCodeAt(i) << 24) >> 24;
+  const V = [];
+  for (let i=0;i<m.items.length;i++){
+    const v = new Float64Array(m.dim); let s = 0;
+    for (let j=0;j<m.dim;j++){ v[j] = q[i*m.dim+j]/127*m.scale; s += v[j]*v[j]; }
+    s = Math.sqrt(s) || 1;
+    for (let j=0;j<m.dim;j++) v[j] /= s;
+    V.push(v);
+  }
+  return CACHE[mode] = { V, items: m.items, d: m.dim };
+}
+
+const MODES = {
+  shapes: {
+    title:'Shapes', kind:'vision',
+    blurb:'Procedurally generated forms with known generative factors — family, fill, colour, count. Because the ground truth is known, what each learner inferred can be checked rather than guessed.',
+    probe:'probes the Pace dial',
+    q1:'Do you like the look of this?',
+    q2:'Would this work as an app icon?',
+    drift:'Same shapes. Different job. You are no longer picking what you like — you are picking what would survive at 32 pixels on a home screen. That is a different function of the same input.',
+  },
+  flags: {
+    title:'Flags', kind:'vision + text',
+    blurb:'Every flag carries two embeddings in one shared CLIP space — the image, and the country name as text. A preference can live in either channel, and the learners have to work out which.',
+    probe:'probes the Geometry dial',
+    q1:'Do you like this flag as a piece of design?',
+    q2:'Would you want to travel there next year?',
+    drift:'Same flags, but you are no longer judging the design. You are judging the place. The pixels did not move; the label did.',
+  },
+  people: {
+    title:'People', kind:'text',
+    blurb:'Public figures as short text descriptors — field, era, region. The least separable of the three modes, where the honest answer is often that nine examples are not enough.',
+    probe:'probes the Evidence dial',
+    q1:'Do you admire this person’s work?',
+    q2:'Would you sit through a 20-minute talk by them?',
+    drift:'Admiration and appetite are different functions. Plenty of people you admire you would not want to hear speak, and the reverse is at least as common.',
+  },
+};
+
+const META = [
+  { id:'sgd',    nm:'Online logistic (SGD)',    ac:'var(--c-sgd)',
+    dial:'the control · no anchor, no replay' },
+  { id:'ftrl',   nm:'FTRL-Proximal',            ac:'var(--c-ftrl)',
+    dial:'anchor + geometry changed' },
+  { id:'proto',  nm:'Prototype centroid',       ac:'var(--c-proto)',
+    dial:'pace = one shot, closed form' },
+  { id:'replay', nm:'Replay + Fisher anchor',   ac:'var(--c-replay)',
+    dial:'evidence + anchor + geometry' },
+];
+const ADAPTER_META = { id:'adapter', nm:'Head + rank-2 adapter', ac:'var(--c-adapter)',
+    dial:'locus widened · watch it distort' };
+
+const N_TRAIN1 = 9, N_TEST1 = 6, N_TRAIN2 = 8, N_TEST2 = 6;
+
+/* ---------------- state ---------------- */
+let S = null;
+
+function reset(mode){
+  const { V, items, d } = decode(mode);
+  S = {
+    mode, V, items, d,
+    phase:'train1', idx:0,
+    order: pickOrder(V, N_TRAIN1 + N_TEST1 + N_TRAIN2 + N_TEST2),
+    log: [],                 // {i,y,act}  training answers only
+    test1: [], test2: [],    // {i,y,pred:{...}}  never trained on
+    dials: { eta:0.9, lambda:0.12, gamma:1.0, adapter:false },
+    ph: null, phSeries: [],
+  };
+  rebuild();
+}
+
+/* Farthest-point sampling: spread the questions across the embedding space
+   instead of clustering them. This is herding, in miniature. */
+function pickOrder(V, n){
+  const chosen = [];
+  const N = V.length;
+  chosen.push(Math.floor(Math.random()*N));
+  const best = new Float64Array(N).fill(Infinity);
+  for (let k=1;k<n;k++){
+    const last = V[chosen[chosen.length-1]];
+    let arg = -1, argv = -Infinity;
+    for (let i=0;i<N;i++){
+      if (chosen.indexOf(i) >= 0) continue;
+      let dp = 0; for (let j=0;j<last.length;j++) dp += last[j]*V[i][j];
+      const dist = 1 - dp;
+      if (dist < best[i]) best[i] = dist;
+      if (best[i] > argv){ argv = best[i]; arg = i; }
+    }
+    chosen.push(arg);
+  }
+  return chosen;
+}
+
+/* Every learner is a pure function of the answer log — so changing a dial
+   and re-running history is one call, not a special case. */
+function rebuild(){
+  const o = {
+    sgd:    { eta: S.dials.eta },
+    replay: { lambda: S.dials.lambda },
+    proto:  { gamma: S.dials.gamma },
+  };
+  S.learners = CL.makeLearners(S.d, o);
+  if (S.dials.adapter) S.learners.push(new CL.AdapterHead(S.d, { eta: S.dials.eta }));
+  S.ph = new CL.PageHinkley();
+  S.phSeries = [];
+  S.hist = {};
+  for (const m of S.learners) S.hist[m.id] = [];
+  for (const { i, y } of S.log){
+    const pre = S.learners.map(m => m.prob(S.V[i]));
+    S.learners.forEach((m,k) => { m.observe(S.V[i], y); S.hist[m.id].push(m.moved); });
+    const ref = S.learners.find(m => m.id==='replay');
+    const err = Math.abs(Math.round(pre[S.learners.indexOf(ref)]) - y);
+    S.phSeries.push(S.ph.push(err));
+  }
+}
+
+function metaFor(id){ return META.find(m=>m.id===id) || ADAPTER_META; }
+const pct = v => (v*100).toFixed(0) + '%';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------------- item rendering ---------------- */
+function specimen(mode, it){
+  if (mode === 'shapes') return `<div class="specimen">${it.svg}</div>`;
+  if (mode === 'flags')  return `<div class="specimen"><img alt="Flag of ${esc(it.name)}" src="data:image/webp;base64,${it.img}"></div>`;
+  return `<div class="specimen"><div class="person">
+      <div class="nm">${esc(it.name)}</div>
+      <div class="ds">${esc(it.desc)}</div>
+      <div class="ch"><span>${esc(it.field)}</span><span>${esc(it.era)}</span><span>${esc(it.region)}</span></div>
+    </div></div>`;
+}
+function itemCaption(mode, it){
+  if (mode==='shapes') return `${it.count>1?'three ':''}${it.colour} ${it.family}, ${it.fill}`;
+  if (mode==='flags')  return `${it.name} · ${it.continent}`;
+  return '';   // the person card already carries its own attributes
+}
+function thumbFor(mode){
+  const it = B[mode].items;
+  if (mode==='shapes') return it.filter(x=>x.family==='star5'||x.family==='circle').slice(0,1).map(x=>x.svg).join('');
+  if (mode==='flags')  return it.slice(0,3).map(x=>`<img alt="" src="data:image/webp;base64,${x.img}">`).join('');
+  return `<div class="pn">${it.slice(0,2).map(x=>esc(x.name)).join('<br>')}</div>`;
+}
+
+/* ---------------- views ---------------- */
+function render(){
+  if (!S) return menu();
+  if (S.phase==='train1' || S.phase==='train2') return question();
+  if (S.phase==='test1'  || S.phase==='test2')  return question();
+  if (S.phase==='result1') return result1();
+  if (S.phase==='drift')   return driftCard();
+  if (S.phase==='final')   return final();
+}
+
+function menu(){
+  app.innerHTML = `
+   <div style="max-width:74ch; margin-top:30px">
+     <p class="serif" style="font-size:1.06rem; color:var(--ink-2)">
+       Pick a mode. You will be shown ${N_TRAIN1} items and asked a simple question about each.
+       Then the learners predict ${N_TEST1} you have not seen. Then the question changes — and
+       you answer ${N_TRAIN2} more. At the end you get a scorecard with the metric the continual-learning
+       literature actually cares about: <b>backward transfer</b>, how much each learner lost on the old
+       question while learning the new one.
+     </p>
+   </div>
+   <div class="modes">
+     ${Object.entries(MODES).map(([k,m]) => `
+       <button class="mode" data-mode="${k}">
+         <div class="thumb">${thumbFor(k)}</div>
+         <div class="body">
+           <div class="lbl" style="color:var(--fast); margin-bottom:6px">${m.kind}</div>
+           <h3>${m.title}</h3>
+           <p>${m.blurb}</p>
+           <div class="probe">${m.probe}</div>
+         </div>
+       </button>`).join('')}
+   </div>`;
+  app.querySelectorAll('.mode').forEach(b =>
+    b.onclick = () => { reset(b.dataset.mode); render(); });
+}
+
+function phaseInfo(){
+  const p = S.phase;
+  if (p==='train1') return { name:'Act I — learning your taste', n:N_TRAIN1, test:false, act:1 };
+  if (p==='test1')  return { name:'Act I — the learners guess', n:N_TEST1, test:true, act:1 };
+  if (p==='train2') return { name:'Act II — after the change', n:N_TRAIN2, test:false, act:2 };
+  return { name:'Act II — the learners guess again', n:N_TEST2, test:true, act:2 };
+}
+
+function offsetFor(){
+  const p = S.phase;
+  if (p==='train1') return 0;
+  if (p==='test1')  return N_TRAIN1;
+  if (p==='train2') return N_TRAIN1+N_TEST1;
+  return N_TRAIN1+N_TEST1+N_TRAIN2;
+}
+
+function question(){
+  const info = phaseInfo();
+  const M = MODES[S.mode];
+  const gi = S.order[offsetFor() + S.idx];
+  const it = S.items[gi];
+  const x = S.V[gi];
+  const probs = {}; S.learners.forEach(m => probs[m.id] = m.prob(x));
+
+  app.innerHTML = `
+  <div class="board">
+    <div class="panel panel-p">
+      <div class="track">
+        <span class="actname">${info.name}</span>
+        <span class="pips">${Array.from({length:info.n},(_,k)=>
+          `<span class="pip ${info.test?'t':''} ${k<S.idx?'done':k===S.idx?'now':''}"></span>`).join('')}</span>
+        <span class="lbl" style="margin-left:auto">${S.idx+1} / ${info.n}</span>
+      </div>
+      <div class="stage">
+        ${specimen(S.mode, it)}
+        ${itemCaption(S.mode, it) ? `<div class="caption">${esc(itemCaption(S.mode, it))}</div>` : ''}
+        <div class="ask serif">${info.act===1 ? M.q1 : M.q2}</div>
+        <div class="choices">
+          <button class="btn yes" data-y="1">Yes<span class="kbd">Y</span></button>
+          <button class="btn no"  data-y="0">No<span class="kbd">N</span></button>
+        </div>
+        ${info.test ? `<div class="lbl" style="color:var(--fast)">the rail already shows each learner’s guess — this one is not trained on</div>` : ''}
+      </div>
+    </div>
+    <div>
+      <div class="railhead">
+        <span class="lbl">the four learners</span>
+        <span class="lbl" style="color:var(--faint)">P(you say yes)</span>
+      </div>
+      <div class="rail">${S.learners.map(m => lcard(m, probs[m.id])).join('')}</div>
+      ${driftGauge()}
+    </div>
+  </div>`;
+
+  const answer = (y) => {
+    if (info.test){
+      (info.act===1 ? S.test1 : S.test2).push({ i:gi, y });
+    } else {
+      S.log.push({ i:gi, y, act:info.act });
+      rebuild();
+    }
+    S.idx++;
+    if (S.idx >= info.n){
+      S.idx = 0;
+      if (S.phase==='train1') S.phase='test1';
+      else if (S.phase==='test1'){ S.phase='result1'; }
+      else if (S.phase==='train2') S.phase='test2';
+      else S.phase='final';
+    }
+    render();
+  };
+  app.querySelectorAll('[data-y]').forEach(b => b.onclick = () => answer(+b.dataset.y));
+  document.onkeydown = (e) => {
+    const k = e.key.toLowerCase();
+    if (k==='y'||k==='arrowright') answer(1);
+    if (k==='n'||k==='arrowleft')  answer(0);
+  };
+}
+
+function lcard(m, p){
+  const meta = metaFor(m.id);
+  const mv = S.hist[m.id] || [];
+  return `<div class="lcard" style="--ac:${meta.ac}">
+    <div class="top"><span class="nm">${meta.nm}</span><span class="pv">${pct(p)}</span></div>
+    <div class="dial">${meta.dial}</div>
+    <div class="bar mid"><i style="width:${(p*100).toFixed(1)}%"></i></div>
+    <div class="stats">
+      <span>N<sub>eff</sub> <b>${m.nEff().toFixed(1)}</b></span>
+      <span>|Δw| <b>${(m.moved||0).toFixed(2)}</b></span>
+      ${(m.sparsity && S.log.length) ? `<span>L1 zeros <b>${pct(m.sparsity())}</b></span>` : ''}
+    </div>
+    ${mv.length>1 ? sparkline(mv, meta.ac) : ''}
+  </div>`;
+}
+
+function sparkline(vals, colour){
+  const w=300,h=22, mx=Math.max(0.001,...vals);
+  const step = vals.length>1 ? w/(vals.length-1) : w;
+  const pts = vals.map((v,i)=>`${(i*step).toFixed(1)},${(h - (v/mx)*(h-3)).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+    <polyline points="${pts}" fill="none" stroke="${colour}" stroke-width="1.6" opacity=".75"
+      vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+function driftGauge(){
+  if (!S.phSeries.length) return '';
+  const stat = S.phSeries[S.phSeries.length-1];
+  const thr = S.ph.threshold;
+  const w = Math.min(100, Math.max(0, stat/thr*100));
+  return `<div class="panel panel-p" style="margin-top:16px; padding:16px 18px">
+    <div class="lbl">drift detector · Page-Hinkley</div>
+    <div class="gauge"><div class="track2"><i style="width:${w.toFixed(0)}%"></i><u style="left:100%"></u></div></div>
+    <div class="stats" style="display:flex; gap:14px; margin-top:9px; font-family:'Spline Sans Mono',monospace; font-size:.66rem; color:var(--muted)">
+      <span>m<sub>T</sub>−M<sub>T</sub> = ${stat.toFixed(2)} / ${thr}</span>
+      <span>${S.ph.fired ? `<b style="color:var(--fast)">fired at answer ${S.ph.firedAt}</b>` : 'no alarm'}</span>
+    </div>
+    <div style="font-size:.75rem; color:var(--faint); margin-top:8px; line-height:1.45">
+      ADWIN would give a guaranteed bound, but at n=${S.phSeries.length} its cut threshold is
+      ε=${CL.adwinEpsCut(Math.ceil(S.phSeries.length/2), Math.floor(S.phSeries.length/2)).toFixed(2)}
+      — larger than any error gap a game this short can produce. Guarantees cost data.
+    </div>
+  </div>`;
+}
+
+/* Accuracy is always recomputed from a replayed model, never from a cached
+   prediction — so moving a dial re-scores every phase, not just the last one. */
+function accWith(learners, set){
+  const out = {};
+  for (const m of learners){
+    let ok = 0;
+    for (const t of set) if (((m.prob(S.V[t.i]) >= .5 ? 1 : 0) === t.y)) ok++;
+    out[m.id] = set.length ? ok/set.length : 0;
+  }
+  return out;
+}
+/* Mean probability assigned to the answer you actually gave. With six test items
+   accuracy only moves in steps of 17%; a proper scoring rule is continuous and
+   separates learners that tie on accuracy. */
+function confWith(learners, set){
+  const out = {};
+  for (const m of learners){
+    let s = 0;
+    for (const t of set){ const p = m.prob(S.V[t.i]); s += (t.y === 1 ? p : 1 - p); }
+    out[m.id] = set.length ? s/set.length : 0;
+  }
+  return out;
+}
+/* replay a prefix of the answer log under the current dial settings */
+function replayLearners(subset){
+  const o = { sgd:{eta:S.dials.eta}, replay:{lambda:S.dials.lambda}, proto:{gamma:S.dials.gamma} };
+  const ls = CL.makeLearners(S.d, o);
+  if (S.dials.adapter) ls.push(new CL.AdapterHead(S.d, { eta:S.dials.eta }));
+  for (const { i, y } of subset) for (const m of ls) m.observe(S.V[i], y);
+  return ls;
+}
+
+/* what did the answers actually have in common? */
+function commonalities(act){
+  const keys = { shapes:['family','fill','colour','count'], flags:['continent','bands'], people:['field','era','region'] }[S.mode];
+  const liked = S.log.filter(l => l.act===act && l.y===1).map(l => S.items[l.i]);
+  const all = S.items;
+  if (!liked.length) return 'you said no to everything in this act — a perfectly learnable concept, just an empty one.';
+  const found = [];
+  for (const k of keys){
+    const c = {}; liked.forEach(i => { const v = String(i[k]); c[v]=(c[v]||0)+1; });
+    for (const [v,n] of Object.entries(c)){
+      const base = all.filter(i=>String(i[k])===v).length/all.length;
+      const lift = (n/liked.length)/Math.max(base,1e-6);
+      if (n>=2 && lift>1.6) found.push({ k,v,n,lift });
+    }
+  }
+  found.sort((a,b)=>b.lift*b.n - a.lift*a.n);
+  if (!found.length) return `your ${liked.length} yeses have no single obvious attribute in common — which is exactly when a learner has to rely on the embedding rather than on a rule.`;
+  return 'your yeses over-index on ' + found.slice(0,3).map(f =>
+    `<b>${esc(f.v)}</b> (${f.n} of ${liked.length}, ${f.lift.toFixed(1)}× base rate)`).join(', ') + '.';
+}
+
+function result1(){
+  const a = accWith(S.learners, S.test1);
+  const cf = confWith(S.learners, S.test1);
+  const best = S.learners.slice().sort((x,y)=>a[y.id]-a[x.id])[0];
+  app.innerHTML = `
+  <div class="panel panel-p" style="margin-top:26px">
+    <div class="lbl">end of act I</div>
+    <h2 style="margin:8px 0 4px">Nine answers in.</h2>
+    <p class="serif" style="color:var(--ink-2); max-width:70ch">${commonalities(1)}</p>
+    <div class="res tablewrap"><table>
+      <thead><tr><th>learner</th><th>correct on the 6 unseen items</th><th>mean P(your answer)</th><th>N<sub>eff</sub></th><th>total movement</th></tr></thead>
+      <tbody>${S.learners.map(m=>{
+        const meta=metaFor(m.id);
+        const tot=(S.hist[m.id]||[]).reduce((s,v)=>s+v,0);
+        return `<tr><td><span class="dot" style="background:${meta.ac}"></span>${meta.nm}</td>
+          <td class="num">${pct(a[m.id])} <span style="color:var(--faint)">(${Math.round(a[m.id]*N_TEST1)}/${N_TEST1})</span></td>
+          <td class="num">${cf[m.id].toFixed(3)}</td>
+          <td class="num">${m.nEff().toFixed(1)}</td>
+          <td class="num">${tot.toFixed(2)}</td></tr>`; }).join('')}</tbody>
+    </table></div>
+    <div class="note">
+      <b>${metaFor(best.id).nm}</b> leads after nine examples${best.id==='proto'
+        ? ' — which is the expected result, and the uncomfortable one. A closed-form centroid with no gradients beats three gradient learners, and it is structurally what in-context learning does. Nearest-class-mean on a frozen backbone beating elaborate methods is one of the most reliably reproduced findings in the field.'
+        : '. Watch whether it holds once the question changes.'}
+    </div>
+    <button class="btn primary" id="go">Continue — the question is about to change</button>
+  </div>`;
+  document.getElementById('go').onclick = () => { S.phase='drift'; render(); };
+  document.onkeydown = null;
+}
+
+function driftCard(){
+  const M = MODES[S.mode];
+  app.innerHTML = `
+  <div class="panel panel-p" style="margin-top:26px; max-width:78ch">
+    <div class="lbl" style="color:var(--fast)">concept drift · p(y|x) moves, p(x) does not</div>
+    <h2 style="margin:10px 0 12px">New question.</h2>
+    <p class="serif" style="font-size:1.22rem; color:var(--ink)">${M.q2}</p>
+    <p class="serif" style="color:var(--ink-2)">${M.drift}</p>
+    <div class="note">
+      Everything the four learners believe was fitted to the <em>old</em> question. Nothing tells them
+      it changed — they have to notice. The detector in the rail is watching their running error, and
+      the scorecard at the end will measure what each one lost.
+    </div>
+    <button class="btn primary" id="go">Start Act II</button>
+  </div>`;
+  document.getElementById('go').onclick = () => { S.phase='train2'; S.idx=0; render(); };
+}
+
+function final(){
+  const before = accWith(replayLearners(S.log.filter(l => l.act === 1)), S.test1);
+  const oldNow = accWith(S.learners, S.test1);
+  const newAcc = accWith(S.learners, S.test2);
+  const newConf = confWith(S.learners, S.test2);
+  const rows = S.learners.map(m => {
+    const bwt = oldNow[m.id] - before[m.id];
+    return { m, meta:metaFor(m.id), before:before[m.id], oldNow:oldNow[m.id], newAcc:newAcc[m.id],
+             newConf:newConf[m.id], bwt,
+             tot:(S.hist[m.id]||[]).reduce((s,v)=>s+v,0) };
+  });
+  const bestRet = rows.slice().sort((a,b)=>b.bwt-a.bwt)[0];
+  const bestNew = rows.slice().sort((a,b)=>(b.newAcc-a.newAcc) || (b.newConf-a.newConf))[0];
+
+  app.innerHTML = `
+  <div class="panel panel-p" style="margin-top:26px">
+    <div class="lbl">scorecard</div>
+    <h2 style="margin:8px 0 14px">What each dial cost you.</h2>
+    <div class="res tablewrap"><table>
+      <thead><tr>
+        <th>learner</th><th>dial that differs</th>
+        <th>old question<br>before drift</th><th>old question<br>after drift</th>
+        <th>backward<br>transfer</th><th>new question</th><th>mean P<br>(new)</th><th>total<br>movement</th>
+      </tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td><span class="dot" style="background:${r.meta.ac}"></span>${r.meta.nm}</td>
+        <td style="color:var(--muted); font-size:.8rem">${r.meta.dial}</td>
+        <td class="num">${pct(r.before)}</td>
+        <td class="num">${pct(r.oldNow)}</td>
+        <td class="num ${r.bwt<-0.001?'neg':r.bwt>0.001?'pos':''}">${r.bwt>0.001?'+':''}${pct(r.bwt)}</td>
+        <td class="num">${pct(r.newAcc)}</td>
+        <td class="num">${r.newConf.toFixed(3)}</td>
+        <td class="num">${r.tot.toFixed(2)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+
+    <div class="note">
+      ${bestRet.m.id===bestNew.m.id
+        ? `<b>${bestRet.meta.nm}</b> happened to win on both axes this run — with five test items that is well inside noise. Re-run it, or move the dials below and watch the ordering change.`
+        : `<b>${bestRet.meta.nm}</b> retained the old question best (${bestRet.bwt>=0?'+':''}${pct(bestRet.bwt)} backward transfer);
+           <b>${bestNew.meta.nm}</b> adapted to the new one best (${pct(bestNew.newAcc)}). That split is not an accident and
+           it is not fixable — it is the conservation law. Within one tier, retention and adaptation trade against
+           a fixed budget. The only way out is to run several tiers at different speeds, which is what every
+           serious 2026 proposal, from sparse memory finetuning to Nested Learning, is actually doing.`}
+    </div>
+    ${driftGauge()}
+
+    <h3 style="margin:34px 0 4px">Turn one dial. Re-run your entire history.</h3>
+    <p style="color:var(--muted); font-size:.92rem; max-width:66ch">
+      Every learner here is a pure function of your ${S.log.length} answers, so changing a dial replays the whole
+      stream from scratch. Nothing is refitted incrementally and nothing is cached — this table is what would
+      have happened if the dial had been set this way from the first click.
+    </p>
+    <div class="dials">
+      <div class="drow">
+        <label>Pace · η</label>
+        <input type="range" id="d-eta" min="0.1" max="3" step="0.1" value="${S.dials.eta}">
+        <output id="o-eta">${S.dials.eta.toFixed(1)}</output>
+      </div>
+      <div class="drow">
+        <label>Anchor · λ</label>
+        <input type="range" id="d-lam" min="0" max="1.2" step="0.02" value="${S.dials.lambda}">
+        <output id="o-lam">${S.dials.lambda.toFixed(2)}</output>
+      </div>
+      <div class="drow">
+        <label>Forgetting · γ</label>
+        <input type="range" id="d-gam" min="0.5" max="1" step="0.01" value="${S.dials.gamma}">
+        <output id="o-gam">${S.dials.gamma.toFixed(2)}</output>
+      </div>
+      <div class="drow">
+        <label>Locus</label>
+        <label class="switch"><input type="checkbox" id="d-ad" ${S.dials.adapter?'checked':''}>
+          unfreeze a rank-2 adapter on top of the frozen embedding</label>
+        <output></output>
+      </div>
+    </div>
+    <p style="color:var(--muted); font-size:.85rem; margin-top:14px; max-width:70ch">
+      γ is the prototype's forgetting factor: its effective memory is 1/(1−γ), so γ=0.90 means it answers to
+      roughly the last ten answers and γ=1.00 means it answers to all of them and can never turn.
+      The adapter is the one control that widens the <em>Locus</em> dial — it lets gradients reach the
+      representation instead of only the head. Expect it to help on the newest items and hurt on the oldest.
+      That is Kumar et al.'s LP-FT result, at a scale you can watch.
+    </p>
+    <div style="display:flex; gap:10px; margin-top:22px; flex-wrap:wrap">
+      <button class="btn ghost" id="again">Play again — same mode</button>
+      <button class="btn ghost" id="menu">Choose another mode</button>
+    </div>
+  </div>`;
+
+  const bind = (id, out, key, fmt) => {
+    const el = document.getElementById(id);
+    el.oninput = () => {
+      S.dials[key] = +el.value;
+      document.getElementById(out).textContent = fmt(+el.value);
+      rebuild(); final();
+    };
+  };
+  bind('d-eta','o-eta','eta', v=>v.toFixed(1));
+  bind('d-lam','o-lam','lambda', v=>v.toFixed(2));
+  bind('d-gam','o-gam','gamma', v=>v.toFixed(2));
+  document.getElementById('d-ad').onchange = (e) => {
+    S.dials.adapter = e.target.checked; rebuild(); final();
+  };
+  document.getElementById('again').onclick = () => { reset(S.mode); render(); };
+  document.getElementById('menu').onclick  = () => { S = null; render(); };
+  document.onkeydown = null;
+}
+
+render();
+})();
+</script>

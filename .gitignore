@@ -15,3 +15,7 @@ output/
 # Node
 node_modules/
 dist/
+# Generated demonstrator page (regenerate with: python3 src/build.py)
+src/game.html
+# CLIP weights (408 MB, fetched via src/README curl)
+src/weights/

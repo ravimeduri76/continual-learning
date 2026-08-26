@@ -59,11 +59,32 @@ adapts worst; plain SGD does the opposite.
 
 ## Deliverable sequence
 
-1. **Framework doc** (Five Dials of Plasticity) — `docs/`
-2. **Game** (The Forgetting Machine) — `src/`
+1. **Framework doc** (Five Dials of Plasticity) — [`docs/five-dials-framework.md`](docs/five-dials-framework.md)
+2. **Game** (The Forgetting Machine) — [`src/`](src/), build notes in
+   [`docs/demonstrator-build-notes.md`](docs/demonstrator-build-notes.md)
+
+## Running the demonstrator
+
+No CLIP needed — the pre-computed embeddings ship in `src/assets/bundle.json`:
+
+```
+python3 src/build.py     # regenerates src/game.html (open it in a browser)
+node src/test_learners.js  # sanity-check the five learners + drift detectors
+```
+
+Reproducing the embeddings from scratch (needs the 408 MB CLIP checkpoint) is
+documented in [`src/README.md`](src/README.md).
+
+## Next step (flagged by the source session)
+
+Every learner currently has **one clock**. To demonstrate the partition escape
+from Law I, add a **two-clock learner** (fast head + slow anchored body, updated
+at different frequencies), then a **transformer mode** contrasting a growing
+context against a LoRA update — putting classic ML, deep nets, and transformers
+in one artifact.
 
 ## Provenance
 
-Bootstrapped from a Claude Cowork session. Original artifacts land in
-`incoming/` (src tarball + the two markdown docs) and are unpacked into
-`docs/` and `src/`.
+Bootstrapped from a Claude Cowork session. Original artifacts were unpacked from
+`incoming/` into `docs/` (the two markdown docs) and `src/` (the tarball). The
+tarball is retained in `incoming/` as the pristine source.
