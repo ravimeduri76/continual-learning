@@ -60,6 +60,16 @@ td:first-child{font-weight:600; white-space:nowrap}
 .btn.ghost{background:transparent; color:var(--slow); border-color:var(--rule-strong)}
 .cta{text-align:center; margin:3em 0 1em; padding:32px; background:var(--surface); border:1px solid var(--rule); border-radius:6px; box-shadow:var(--shadow)}
 .cta h2{margin:0 0 .3em}
+.locusfig{width:100%; max-width:680px; height:auto; display:block; margin:1.6em auto .5em; font-family:"Spline Sans Mono",monospace}
+.locusfig .blk{fill:var(--surface-3); stroke:var(--rule-strong); stroke-width:1}
+.locusfig .move{fill:var(--fast); stroke:var(--fast)}
+.locusfig .adpt,.locusfig .slot{fill:var(--accent); stroke:none}
+.locusfig .rbarbg{fill:var(--surface-3)}
+.locusfig .rbar{fill:var(--good)}
+.locusfig .ttl{fill:var(--ink); font-weight:600; font-size:13px}
+.locusfig .cap{fill:var(--faint); font-size:11px}
+.locusfig .deg{fill:var(--fast); font-weight:700; font-size:15px}
+.figcap{max-width:640px; margin:0 auto 1.6em; text-align:center; font-size:.85rem; color:var(--muted)}
 .foot{margin-top:60px; padding-top:22px; border-top:1px solid var(--rule); color:var(--faint); font-size:.82rem}
 ul{max-width:70ch} li{margin:.3em 0}
 code{font-family:"Spline Sans Mono",monospace; font-size:.9em; background:var(--surface-2); padding:1px 5px; border-radius:3px}
@@ -135,6 +145,56 @@ code{font-family:"Spline Sans Mono",monospace; font-size:.9em; background:var(--
 <h3>Transformers — the same knobs at scale, plus a new tier</h3>
 <p>A transformer is a deep network, so all of the above still holds. Two things change at scale.</p>
 <p><b>First, Locus wins decisively.</b> Restricting which parameters may move — LoRA's low-rank adapters, or sparse-memory finetuning that edits only a handful of memory slots — is what turns catastrophic forgetting into a rounding error: the <b>−89% → −71% → −11%</b> ladder on NaturalQuestions is <em>entirely</em> a Locus effect.</p>
+
+<svg class="locusfig" viewBox="0 0 720 252" role="img" aria-label="The Locus ladder in transformers. Full fine-tune moves every weight and keeps 11% of prior knowledge; LoRA moves small added adapters and keeps 29%; sparse-memory finetuning moves a few memory slots and keeps 89%.">
+  <!-- Full fine-tune -->
+  <text class="ttl" x="120" y="18" text-anchor="middle">Full fine-tune</text>
+  <text class="cap" x="120" y="35" text-anchor="middle">every weight moves</text>
+  <rect class="blk move" x="60" y="48" width="120" height="16" rx="2"/>
+  <rect class="blk move" x="60" y="69" width="120" height="16" rx="2"/>
+  <rect class="blk move" x="60" y="90" width="120" height="16" rx="2"/>
+  <rect class="blk move" x="60" y="111" width="120" height="16" rx="2"/>
+  <rect class="blk move" x="60" y="132" width="120" height="16" rx="2"/>
+  <rect class="blk move" x="60" y="153" width="120" height="16" rx="2"/>
+  <rect class="rbarbg" x="60" y="196" width="120" height="12" rx="6"/>
+  <rect class="rbar" x="60" y="196" width="13" height="12" rx="6"/>
+  <text class="deg" x="120" y="228" text-anchor="middle">−89%</text>
+  <text class="cap" x="120" y="244" text-anchor="middle">11% kept</text>
+
+  <!-- LoRA -->
+  <text class="ttl" x="360" y="18" text-anchor="middle">LoRA adapters</text>
+  <text class="cap" x="360" y="35" text-anchor="middle">small added tabs move</text>
+  <rect class="blk" x="300" y="48" width="120" height="16" rx="2"/>
+  <rect class="blk" x="300" y="69" width="120" height="16" rx="2"/>
+  <rect class="blk" x="300" y="90" width="120" height="16" rx="2"/>
+  <rect class="blk" x="300" y="111" width="120" height="16" rx="2"/>
+  <rect class="blk" x="300" y="132" width="120" height="16" rx="2"/>
+  <rect class="blk" x="300" y="153" width="120" height="16" rx="2"/>
+  <rect class="adpt" x="414" y="69" width="12" height="16" rx="1"/>
+  <rect class="adpt" x="414" y="111" width="12" height="16" rx="1"/>
+  <rect class="rbarbg" x="300" y="196" width="120" height="12" rx="6"/>
+  <rect class="rbar" x="300" y="196" width="35" height="12" rx="6"/>
+  <text class="deg" x="360" y="228" text-anchor="middle">−71%</text>
+  <text class="cap" x="360" y="244" text-anchor="middle">29% kept</text>
+
+  <!-- Sparse-memory finetune -->
+  <text class="ttl" x="600" y="18" text-anchor="middle">Sparse-memory FT</text>
+  <text class="cap" x="600" y="35" text-anchor="middle">a few slots move</text>
+  <rect class="blk" x="540" y="48" width="120" height="16" rx="2"/>
+  <rect class="blk" x="540" y="69" width="120" height="16" rx="2"/>
+  <rect class="blk" x="540" y="90" width="120" height="16" rx="2"/>
+  <rect class="blk" x="540" y="111" width="120" height="16" rx="2"/>
+  <rect class="blk" x="540" y="132" width="120" height="16" rx="2"/>
+  <rect class="blk" x="540" y="153" width="120" height="16" rx="2"/>
+  <rect class="slot" x="580" y="93" width="7" height="7" rx="1"/>
+  <rect class="slot" x="596" y="93" width="7" height="7" rx="1"/>
+  <rect class="slot" x="612" y="93" width="7" height="7" rx="1"/>
+  <rect class="rbarbg" x="540" y="196" width="120" height="12" rx="6"/>
+  <rect class="rbar" x="540" y="196" width="107" height="12" rx="6"/>
+  <text class="deg" x="600" y="228" text-anchor="middle">−11%</text>
+  <text class="cap" x="600" y="244" text-anchor="middle">89% kept</text>
+</svg>
+<p class="figcap">Left to right the <b>Locus</b> dial tightens — fewer parameters may move (red) — and knowledge kept on NaturalQuestions (green) climbs from 11% to 89%. Same model, same new data; the only thing that changes is <em>which weights are allowed to move</em>.</p>
 <p><b>Second, in-context learning is a genuinely new dial position: learning with no weight update at all.</b> The context behaves like a rank-1 edit to the first MLP weight matrix (Dherin et al., 2025),</p>
 <div class="eq">ΔW = W · A(C, x) · xᵀ / ‖x‖²</div>
 <p>so its Pace is a single forward pass, its Anchor is <span class="mono">θ<sub>pretrained</sub></span> exactly, and its Evidence is whatever fits in the prompt. It is the fastest, most reversible dial we have — and the most transient: the trace is discarded the moment the context is evicted.</p>
