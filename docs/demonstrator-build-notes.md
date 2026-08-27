@@ -12,7 +12,7 @@ frozen embeddings; four differ by exactly one dial, the fifth runs two clocks.
 every item held out of train/test, and the two extremes are shown plainly — the item they most
 expect you to like and the one to pass on, with confidence. No blind-answer-then-grade, no
 self-congratulation; the player judges the read, and a 1–5 rating captures it. On the real
-embeddings the top/bottom pick is right ~90–98% of the time for shapes/flags (`predict_demo.js`: 91/77% liked; business leaders 70% over a 51% base, by
+embeddings the top/bottom pick is right ~90–98% of the time for shapes/flags (`predict_demo.js`: 91/77% liked; 98 business leaders 67% over a 46% base, by
 mode from as few as five answers).
 
 **The deeper path (opt-in).** A link continues into the original long protocol — 6 held-out
@@ -42,8 +42,8 @@ quantised. Bundle is 557 KB, page is 606 KB total.
 ```
 shapes/family   0.615 / -0.081  gap 0.697      flags/continent 0.413 / -0.084  gap 0.497
 shapes/count    0.270 / -0.977  gap 1.247      flags/bands     0.220 / -0.450  gap 0.671
-shapes/fill     0.327 / -0.322  gap 0.650      people/industry 0.582 / -0.089  gap 0.672
-                                               people/region   0.286 / -0.396  gap 0.682
+shapes/fill     0.327 / -0.322  gap 0.650      people/industry 0.575 / -0.071  gap 0.646
+                                               people/region   0.468 / -0.195  gap 0.662
 ```
 (People are contemporary business leaders; the prompt carries an industry cue, so
 `industry` and `region` separate cleanly. `polarizing` scores a high gap too, but that is
@@ -57,9 +57,9 @@ Held-out accuracy, 30 seeds, best learner:
   monochrome 74%; colour-based concepts 67–71%.
 - **Flags** — has green in it 82%, Europe 77%, mostly green 71%, Africa 71%;
   horizontal bands 61% (the weakest — CLIP's flag PCA does not foreground band orientation).
-- **Business leaders** — tech-vs-not 86%, region (Asia / Americas) 60–94%;
-  rare industries (finance, crypto) are near chance. The set is a deliberate admired/polarising
-  mix so the base admire-rate is ~50% — opinion splits, which is the point.
+- **Business leaders** (98 of them) — tech-vs-not 80%, region Americas 86% / Asia 58%;
+  rare industries (finance ~40%, crypto) lift less. The set is a deliberate admired/polarising
+  mix so the base admire-rate is ~46% — opinion splits, which is the point.
 
 ## Measured drift behaviour (24 simulated players, real embeddings)
 

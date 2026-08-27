@@ -95,7 +95,7 @@ the committed bundle.
              6th liked   7th unliked   both      random "both"
 shapes          91%          98%        89%          21%
 flags           78%          92%        72%          23%
-people          70%          67%        42%          25%   (business leaders; base admire-rate ~51%)
+people          67%          73%        48%          25%   (98 business leaders; base admire-rate ~46%)
 ```
 
 `node src/twoclock_demo.js` — 200 worlds, 9 clicks on concept A → drift → 7 on concept B:
