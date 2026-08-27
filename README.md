@@ -63,6 +63,18 @@ adapts worst; plain SGD does the opposite.
 2. **Game** (The Forgetting Machine) — [`src/`](src/), build notes in
    [`docs/demonstrator-build-notes.md`](docs/demonstrator-build-notes.md)
 
+## Deployment
+
+The game is one self-contained `game.html`, published to GitHub Pages by
+`.github/workflows/deploy.yml` on every push to `main`: it runs `build.py`,
+then `verify_build.js` (a browser-free runtime guard) + `test_learners.js`,
+then serves the page as `index.html`.
+
+Feedback: the prediction reveal carries a 1–5 rating. Ratings are always kept in
+the player's `localStorage`; to also collect them centrally, set a repo secret
+`FEEDBACK_ENDPOINT` to a Formspree / Apps Script URL and the build injects it.
+No endpoint → nothing is POSTed, the game still runs.
+
 ## Running the demonstrator
 
 No CLIP needed — the pre-computed embeddings ship in `src/assets/bundle.json`:
