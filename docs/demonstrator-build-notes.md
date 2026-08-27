@@ -1,7 +1,6 @@
 # The Forgetting Machine — build notes and measured results
 
-**Artifact:** https://claude.ai/code/artifact/8e6b9e15-319d-4c6e-add1-08abb8df60aa
-**Source archive:** `Continual learning src.tar.gz` (alongside this file)
+**Live demonstrator:** https://ravimeduri76.github.io/continual-learning/
 
 ## What it is
 
@@ -31,7 +30,7 @@ mode from just five answers). It is the sense-of-wow moment; it does not feed th
 ## Embeddings
 
 Frozen CLIP RN50-quickgelu (open_clip, CC12M checkpoint from the mlfoundations GitHub release —
-HuggingFace and download.pytorch.org are both blocked from the sandbox). PCA to 24d (shapes,
+HuggingFace and download.pytorch.org may be blocked in some environments). PCA to 24d (shapes,
 people) / 16+16d (flags: image channel ‖ text channel), mildly whitened, L2-normalised, int8
 quantised. Bundle is 557 KB, page is 606 KB total.
 
@@ -73,7 +72,7 @@ the new concept (68–70%). SHAPES is milder but the same ordering.
 **This is the headline result: replay retains best and adapts worst; plain SGD does the exact
 opposite. Law I (conservation), made clickable.**
 
-## Two-clock learner — the partition of Law I (added after the Cowork session)
+## Two-clock learner — the partition of Law I (added after the initial import)
 
 A fifth learner, `TwoClock` in `learners.js`, built to *demonstrate* the escape the framework
 only asserted. It partitions the predictor into two tiers of **different geometry**, so it does

@@ -1,7 +1,6 @@
 # Five Dials of Plasticity — the unified framework
 
-**Artifact:** https://claude.ai/code/artifact/ba5d0b43-d59b-49e0-b68e-d9919f032db7
-**Demonstrator:** https://claude.ai/code/artifact/8e6b9e15-319d-4c6e-add1-08abb8df60aa
+**Demonstrator:** https://ravimeduri76.github.io/continual-learning/
 **Written:** 26 Aug 2026
 
 ## The master equation

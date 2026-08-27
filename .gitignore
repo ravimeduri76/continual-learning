@@ -19,6 +19,3 @@ dist/
 src/game.html
 # CLIP weights (408 MB, fetched via src/README curl)
 src/weights/
-
-# Local dev guidance, not for publishing
-CLAUDE.md

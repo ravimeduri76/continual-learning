@@ -1,11 +1,11 @@
 # Continual Learning — framework + demonstrator
 
-Two published artifacts:
+Two deliverables:
 
 - **Five Dials of Plasticity** — the unified framework (classic ML → deep nets → transformers)
-  https://claude.ai/code/artifact/ba5d0b43-d59b-49e0-b68e-d9919f032db7
+  `../docs/five-dials-framework.md`
 - **The Forgetting Machine** — the playable demonstrator
-  https://claude.ai/code/artifact/8e6b9e15-319d-4c6e-add1-08abb8df60aa
+  https://ravimeduri76.github.io/continual-learning/
 
 ## The claim
 

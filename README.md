@@ -99,6 +99,6 @@ documented in [`src/README.md`](src/README.md).
 
 ## Provenance
 
-Bootstrapped from a Claude Cowork session. Original artifacts were unpacked from
+Bootstrapped from an initial Claude session. Original artifacts were unpacked from
 `incoming/` into `docs/` (the two markdown docs) and `src/` (the tarball). The
 tarball is retained in `incoming/` as the pristine source.

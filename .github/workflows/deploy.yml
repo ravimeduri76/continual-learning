@@ -45,7 +45,10 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p public
-          cp src/game.html public/index.html
+          # game.template.html carries no doctype/head; wrap into a complete, mobile-ready doc
+          printf '%s' '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The Forgetting Machine</title></head><body>' > public/index.html
+          cat src/game.html >> public/index.html
+          printf '%s' '</body></html>' >> public/index.html
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -220,8 +220,8 @@ input[type=range]{width:100%; accent-color:var(--slow)}
 <div id="app"></div>
 
 <div class="foot">
-  <span>Embeddings: frozen CLIP RN50 (open_clip, CC12M), PCA-reduced. Nothing is sent anywhere — every learner runs in this tab.<br>
-  The framework these dials come from: <a href="https://claude.ai/code/artifact/ba5d0b43-d59b-49e0-b68e-d9919f032db7">Five Dials of Plasticity</a>.</span>
+  <span>Embeddings: frozen CLIP RN50 (open_clip, CC12M), PCA-reduced. Every learner runs in this tab — only your optional 1–5 rating is ever sent.<br>
+  The framework these dials come from: <a href="https://github.com/ravimeduri76/continual-learning/blob/main/docs/five-dials-framework.md">Five Dials of Plasticity</a>.</span>
   <span class="mono" id="ver"></span>
 </div>
 </div>
@@ -379,7 +379,10 @@ function submitFeedback(payload){
   const ep = window.FEEDBACK_ENDPOINT;
   if (ep) {
     try {
-      fetch(ep, { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
+      // text/plain + no-cors: a Google Apps Script web app has no CORS headers, so a JSON
+      // content-type would trigger a preflight it cannot answer. This keeps it a "simple"
+      // request; the script reads e.postData.contents and JSON.parses it. Response is opaque.
+      fetch(ep, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'},
                   body: JSON.stringify(payload) }).catch(()=>{});
     } catch(e){}
   }
