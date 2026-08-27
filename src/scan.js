@@ -49,7 +49,6 @@ const CANDIDATES = {
     'finance':             IN('industry', 'finance'),
     'crypto or finance':   IN('industry', 'crypto', 'finance'),
     'consumer brands':     IN('industry', 'retail', 'media'),
-    'polarising figures':  i => i.polarizing === true,
     'from Asia':           IN('region', 'Asia'),
     'from the Americas':   IN('region', 'Americas'),
     'from Europe':         IN('region', 'Europe'),

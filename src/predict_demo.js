@@ -72,9 +72,9 @@ const CONCEPTS = {
   },
   people: {
     'tech leaders':   it => it.industry === 'tech',
+    'finance':        it => it.industry === 'finance',
     'from Asia':      it => it.region === 'Asia',
     'from Americas':  it => it.region === 'Americas',
-    'polarising':     it => it.polarizing === true,
   },
 };
 

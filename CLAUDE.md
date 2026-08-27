@@ -95,7 +95,7 @@ the committed bundle.
              6th liked   7th unliked   both      random "both"
 shapes          91%          98%        89%          21%
 flags           78%          92%        72%          23%
-people          67%          73%        48%          25%   (98 business leaders; base admire-rate ~46%)
+people          57%          74%        36%          24%   (60 business leaders; base admire-rate ~40%)
 ```
 
 `node src/twoclock_demo.js` — 200 worlds, 9 clicks on concept A → drift → 7 on concept B:
@@ -116,8 +116,9 @@ needs depth and scale. Do not oversell it.
 
 Concept learnability from 9 examples (`scan.js`), for picking demo concepts: shapes —
 stars & crosses 85%, round things 85%, polygons 82%; flags — has green in it 82%, Europe 77%;
-people (business leaders) — industry (tech vs not) and region are the learnable axes;
-rare industries (finance, crypto) are near chance. Near chance: flags/horizontal-bands.
+people (60 business leaders) — tech-vs-not (89%) and region-Americas (92%) are the strong
+axes; sparse ones (Asia, finance) lift less. Roster pruned to recognisable names; no
+"polarising" label is shown (it would prime the rating). Near chance: flags/horizontal-bands.
 
 ## Gotchas
 

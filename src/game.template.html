@@ -395,7 +395,7 @@ function specimen(mode, it){
   return `<div class="specimen"><div class="person">
       <div class="nm">${esc(it.name)}</div>
       <div class="ds">${esc(it.desc)}</div>
-      <div class="ch"><span>${esc(it.industry)}</span><span>${esc(it.region)}</span>${it.polarizing?`<span style="background:rgba(192,74,46,.14); color:#B23A1E">polarising</span>`:''}</div>
+      <div class="ch"><span>${esc(it.industry)}</span><span>${esc(it.region)}</span></div>
     </div></div>`;
 }
 function itemCaption(mode, it){
@@ -684,7 +684,7 @@ function replayLearners(subset){
 
 /* what did the answers actually have in common? */
 function commonalities(act){
-  const keys = { shapes:['family','fill','colour','count'], flags:['continent','bands'], people:['industry','region','polarizing'] }[S.mode];
+  const keys = { shapes:['family','fill','colour','count'], flags:['continent','bands'], people:['industry','region'] }[S.mode];
   const liked = S.log.filter(l => l.act===act && l.y===1).map(l => S.items[l.i]);
   const all = S.items;
   if (!liked.length) return 'you said no to everything in this act — a perfectly learnable concept, just an empty one.';

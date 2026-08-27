@@ -83,7 +83,7 @@ def main():
     print("bundle", round(os.path.getsize("assets/bundle.json") / 1024), "KB", flush=True)
 
     print("\nseparability (within-group cos vs between-group cos; bigger gap = easier):")
-    for key in ["industry", "region", "polarizing"]:
+    for key in ["industry", "region"]:
         r = probe(Zp, people, key)
         if r:
             print(f"  people/{key:10s} within={r[0]:.3f} between={r[1]:.3f}  gap={r[0]-r[1]:.3f}")
