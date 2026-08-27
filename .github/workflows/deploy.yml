@@ -49,6 +49,8 @@ jobs:
           printf '%s' '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The Forgetting Machine</title></head><body>' > public/index.html
           cat src/game.html >> public/index.html
           printf '%s' '</body></html>' >> public/index.html
+          # the framework write-up is a complete standalone page — copy as-is
+          cp src/writeup.html public/writeup.html
 
       - uses: actions/upload-pages-artifact@v3
         with:

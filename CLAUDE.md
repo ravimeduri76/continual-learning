@@ -46,7 +46,10 @@ Two claims the repo is built to support, both load-bearing:
 docs/five-dials-framework.md      the framework, prose
 docs/demonstrator-build-notes.md  build decisions + measured results
 src/learners.js                   THE ENGINE — five learners, Page-Hinkley, ADWIN threshold. No DOM.
-src/game.template.html            the UI. Edit this, never game.html.
+src/game.template.html            the game UI. Edit this, never game.html.
+src/writeup.html                  the framework write-up (math + per-regime); the canonical
+                                  PUBLIC version, hosted at /writeup.html. docs/five-dials-*.md
+                                  is the repo-prose copy. Game and write-up cross-link.
 src/build.py                      inlines learners.js + assets/bundle.json → game.html
 src/gen_{shapes,flags,people}.py  item generation with known generative factors
 src/embed.py                      frozen CLIP RN50 → PCA → int8 → assets/bundle.json

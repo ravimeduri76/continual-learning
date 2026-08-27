@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Five Dials of Plasticity — the theory behind The Forgetting Machine</title>
+<meta name="description" content="Continual learning is one update rule with five knobs. How it works in classic ML, deep networks, and transformers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Spline+Sans+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF0F4; --surface-3:#E3E8EF;
+  --ink:#0F1520; --ink-2:#313B4D; --muted:#5D6779; --faint:#8A93A3;
+  --rule:#D7DCE4; --rule-strong:#B9C1CD;
+  --slow:#2F4A93; --fast:#C04A2E; --good:#1E6F55; --warn:#9A6510; --accent:#0E7B8B;
+  --shadow:0 1px 2px rgba(15,21,32,.05), 0 10px 28px -16px rgba(15,21,32,.22);
+}
+@media (prefers-color-scheme: dark){ :root{
+  --ground:#0D1117; --surface:#141A23; --surface-2:#1B222D; --surface-3:#232C39;
+  --ink:#E6EAF1; --ink-2:#C2CAD6; --muted:#8D97A6; --faint:#6B7484;
+  --rule:#262E3A; --rule-strong:#3A4453;
+  --slow:#86A6EE; --fast:#EE8B70; --good:#63C5A3; --warn:#D9AE5C; --accent:#57C3D6;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 32px -18px rgba(0,0,0,.8);
+}}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:"Archivo","Helvetica Neue",Arial,sans-serif; font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased}
+.mono{font-family:"Spline Sans Mono",ui-monospace,monospace}
+.serif{font-family:"Newsreader",Georgia,serif}
+h1,h2,h3{margin:0; letter-spacing:-.022em; text-wrap:balance}
+h1{font-size:clamp(2rem,5vw,3.2rem); font-weight:700; letter-spacing:-.035em; line-height:1.03}
+h2{font-size:1.6rem; font-weight:650; margin:2.4em 0 .5em}
+h3{font-size:1.08rem; font-weight:600; margin:1.6em 0 .3em; color:var(--accent)}
+p{margin:0 0 1em; max-width:70ch}
+a{color:var(--slow)}
+.wrap{max-width:820px; margin:0 auto; padding:0 22px 90px}
+.lbl{font-family:"Spline Sans Mono",monospace; font-size:.67rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600}
+header{padding:54px 0 26px; border-bottom:1px solid var(--rule)}
+.kicker{color:var(--accent); margin-bottom:.9rem}
+.kicker::before{content:""; display:inline-block; width:28px; height:2px; background:var(--accent); vertical-align:middle; margin-right:.6rem}
+header p{color:var(--ink-2); font-family:"Newsreader",serif; font-size:1.16rem; margin:.9rem 0 0}
+.nav{display:flex; gap:16px; margin-top:22px; align-items:center; flex-wrap:wrap}
+.eq{background:var(--surface); border:1px solid var(--rule); border-radius:5px; padding:16px 18px; margin:1.2em 0;
+  font-family:"Spline Sans Mono",monospace; font-size:.92rem; color:var(--ink-2); overflow-x:auto; box-shadow:var(--shadow); line-height:1.7}
+.eq b{color:var(--ink); font-weight:600}
+.eq .c{color:var(--faint)}
+table{width:100%; border-collapse:collapse; margin:1.2em 0; font-size:.92rem}
+th{text-align:left; padding:9px 10px; font-size:.64rem; letter-spacing:.11em; text-transform:uppercase; color:var(--muted);
+  border-bottom:1px solid var(--rule-strong); font-weight:600}
+td{padding:10px; border-bottom:1px solid var(--rule); vertical-align:top}
+td:first-child{font-weight:600; white-space:nowrap}
+.regime{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--ac,var(--accent));
+  border-radius:5px; padding:20px 24px; margin:1.4em 0; box-shadow:var(--shadow)}
+.note{background:var(--surface-2); border-left:3px solid var(--fast); padding:15px 18px; border-radius:0 4px 4px 0;
+  font-family:"Newsreader",serif; font-size:1.04rem; color:var(--ink-2); margin:1.4em 0}
+.note b{font-family:"Archivo",sans-serif; font-weight:600; color:var(--ink)}
+.btn{display:inline-block; border:1px solid var(--slow); background:var(--slow); color:#fff; padding:12px 24px; border-radius:4px;
+  font-weight:600; text-decoration:none; font-size:1rem}
+.btn.ghost{background:transparent; color:var(--slow); border-color:var(--rule-strong)}
+.cta{text-align:center; margin:3em 0 1em; padding:32px; background:var(--surface); border:1px solid var(--rule); border-radius:6px; box-shadow:var(--shadow)}
+.cta h2{margin:0 0 .3em}
+.foot{margin-top:60px; padding-top:22px; border-top:1px solid var(--rule); color:var(--faint); font-size:.82rem}
+ul{max-width:70ch} li{margin:.3em 0}
+code{font-family:"Spline Sans Mono",monospace; font-size:.9em; background:var(--surface-2); padding:1px 5px; border-radius:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="lbl kicker">The theory behind The Forgetting Machine</div>
+  <h1>Five Dials of Plasticity</h1>
+  <p class="serif">Continual learning is not new. It was solved sixty years ago — for the easy case — and everything since is the same idea under harder constraints. Forty years of methods turn out to be one update rule with five knobs.</p>
+  <div class="nav">
+    <a class="btn" href="./">Play the game →</a>
+    <span class="lbl">~10 min read</span>
+  </div>
+</header>
+
+<h2>The three-beat story</h2>
+<p><b>Classic ML already did it.</b> Online logistic regression, the perceptron, and above all <b>FTRL-Proximal</b> — which ran Google's ad-click models in production, fully online, no human in the loop (McMahan et al., KDD 2013). When the model is convex there is a single optimum, so learning as you go cannot destroy what came before. Continual learning, for convex models, is a solved and high-consequence technology. The periodic <em>batch retraining</em> most teams do is a choice, not a limit of the math.</p>
+
+<p><b>Deep networks do not get it for free.</b> Left alone, a deep net <em>catastrophically forgets</em>: fine-tune on new data and the old capability is overwritten, because gradient descent on a non-convex loss simply follows wherever the new data pulls. The ability to "keep part of the past and adapt fast" is something we <b>engineer</b> — by freezing layers, anchoring weights to the old solution, or rehearsing old data. It is bolted on, not built in.</p>
+
+<p><b>Transformers are just big deep networks.</b> So the same mechanisms apply — that is exactly what LoRA and fine-tuning are. The open question is not <em>can</em> they learn continuously; mechanically they can. It is how to do it <em>without forgetting</em>, at a compute cost someone will pay, with a clear owner for the update loop. Part research problem, part product problem.</p>
+
+<h2>One update rule</h2>
+<p>Write the update for one group of parameters <span class="mono">k</span> (a layer, a head, an adapter, a single weight):</p>
+<div class="eq">θₖ ← θₖ − <b>ηₖ</b> · <b>Πₖ</b> [ ∇<sub>θₖ</sub>ℒ(θ ; <b>𝒟ₜ ∪ ℛₜ</b>) + λₖ <b>Mₖ</b> (θₖ − <b>aₖ</b>) ]</div>
+<p>Every continual-learning method in the last four decades is a setting of five knobs in this one line:</p>
+<table>
+  <thead><tr><th>Dial</th><th>Symbol</th><th>What it controls</th></tr></thead>
+  <tbody>
+    <tr><td>Locus</td><td class="mono">θₖ, Πₖ</td><td>which parameters may move, and along what projection (freeze = don't move; mask = move only some)</td></tr>
+    <tr><td>Pace</td><td class="mono">ηₖ</td><td>how fast — equivalently N<sub>eff</sub>, how many past examples it still answers to</td></tr>
+    <tr><td>Anchor</td><td class="mono">aₖ</td><td>what it is pulled back toward — the origin, the previous solution, or the pretrained init</td></tr>
+    <tr><td>Geometry</td><td class="mono">Mₖ</td><td>in which directions the pull acts — identity, the Fisher, or a hard mask</td></tr>
+    <tr><td>Evidence</td><td class="mono">𝒟ₜ ∪ ℛₜ</td><td>what the gradient is allowed to see — the new stream only, or the stream plus replayed memory</td></tr>
+  </tbody>
+</table>
+<p>Two corner cases are worth naming. <b>Freezing</b> is simply <span class="mono">ηₖ = 0</span>. A <b>prototype / nearest-centroid</b> classifier is the closed-form corner — no gradients at all. And <b>in-context learning</b>, as we will see, is a tier whose Pace is a single forward pass.</p>
+
+<h2>Two facts that do the work</h2>
+<h3>FTRL-Proximal and EWC are the same update</h3>
+<p>The classic online learner and the famous deep-net anti-forgetting method are, algebraically, one thing. Both solve</p>
+<div class="eq">θ ← argmin<sub>θ</sub> [ ℒ<sub>new</sub>(θ) + ½ ‖θ − <b>anchor</b>‖²<sub><b>M</b></sub> ]</div>
+<p>FTRL's per-coordinate stiffness <span class="mono">σ ∝ √Σg²</span>, AdaGrad's preconditioner, the Kalman posterior precision, and EWC's diagonal Fisher <span class="mono">Fᵢ = 𝔼[(∂log p/∂θᵢ)²]</span> are the <em>same statistic</em> — the second moment of the gradient — wearing four job titles: an adaptive learning rate, a posterior precision, a synaptic importance. Google shipped elastic weight consolidation, in all but name, four years before the PNAS paper made it famous.</p>
+<h3>Locus beats Geometry</h3>
+<p>The field spent 2016–2020 on the <em>Geometry</em> dial (EWC, SI, MAS) and it produced the least — pure weight-space penalties sit near chance on class-incremental Split-MNIST. The field is now spending its effort on the <em>Locus</em> dial and it is producing the biggest numbers. Sparse-memory finetuning cuts degradation on NaturalQuestions from <b>−89%</b> (full fine-tune) to <b>−71%</b> (LoRA) to <b>−11%</b> — purely by changing <em>which parameters are eligible to move</em>. Where a trace lives beats how you regularise it.</p>
+
+<h2>How the dials turn in each regime</h2>
+
+<div class="regime" style="--ac:var(--good)">
+<h3>Classic ML — the convex case</h3>
+<p>Online convex optimisation is the clean version of the problem. FTRL-Proximal keeps a running penalty toward its own past iterates:</p>
+<div class="eq">θₜ₊₁ = argmin<sub>θ</sub> [ <span class="c">Σ<sub>s≤t</sub></span> gₛ·θ + ½ <span class="c">Σ<sub>s</sub></span> σₛ‖θ − θₛ‖² + λ₁‖θ‖₁ ] ,  σₜ ∝ √(<span class="c">Σ</span> gₛ²)</div>
+<p><b>Dial settings:</b> Locus = every weight (the model is small); Pace shrinks as <span class="mono">1/√Σg²</span>; Anchor = the previous iterate; Geometry = the diagonal second moment; Evidence = the stream alone — no replay needed, because convexity does the remembering for you. There is a single optimum, so the regret is provably sublinear and forgetting is <em>bounded</em>, never catastrophic.</p>
+<p><b>Consequence in the wild:</b> this is a workhorse, not a toy — FTRL ran ad auctions at planetary scale. The reason continual learning "feels unsolved" today is that we left this comfortable convex world.</p>
+</div>
+
+<div class="regime" style="--ac:var(--fast)">
+<h3>Deep networks — the non-convex case</h3>
+<p>Drop convexity and the trouble begins. The loss surface has many basins; SGD on a new task moves θ into a basin that need not preserve the old input→output map. To first order, the damage to the old task is the gradient interference</p>
+<div class="eq">Δℒ<sub>old</sub> ≈ −η ⟨ ∇ℒ<sub>old</sub> , ∇ℒ<sub>new</sub> ⟩</div>
+<p>which is why forgetting collapses when the two gradients stop overlapping — and why <em>pretraining at scale reduces forgetting for free</em>: bigger pretrained representations are more orthogonal (Ramasesh et al., ICLR 2022). The three usable knobs:</p>
+<ul>
+  <li><b>Locus (Πₖ).</b> Freeze the early layers, or gradually unfreeze, or linear-probe-then-fine-tune. LP-FT (Kumar et al., ICLR 2022) proves why the order matters: a randomly-initialised head produces a large early gradient that drags the feature extractor into directions the in-distribution data cannot constrain, distorting exactly the pretrained features you wanted to keep. Probe first, then fine-tune. This is the strongest lever.</li>
+  <li><b>Anchor + Geometry (aₖ, Mₖ).</b> Elastic Weight Consolidation regularises toward the previous solution θ*, weighted by importance: <span class="mono">ℒ<sub>new</sub> + ½λ Σᵢ Fᵢ(θᵢ − θ*ᵢ)²</span>. That is precisely FTRL's proximal term with <span class="mono">M = Fisher</span>. Synaptic Intelligence is the path-integral sibling.</li>
+  <li><b>Evidence (ℛₜ).</b> Keep a replay buffer of old examples and mix them into each batch; the rehearsed gradient stands in for <span class="mono">∇ℒ<sub>old</sub></span> so the new step cannot quietly erase it.</li>
+</ul>
+<p><b>Consequence in the wild:</b> transfer learning — freeze a pretrained backbone, train a fresh head — is the everyday form of this, and it is nothing more than the Locus dial turned to zero on most of the network.</p>
+</div>
+
+<div class="regime" style="--ac:var(--accent)">
+<h3>Transformers — the same knobs at scale, plus a new tier</h3>
+<p>A transformer is a deep network, so all of the above still holds. Two things change at scale.</p>
+<p><b>First, Locus wins decisively.</b> Restricting which parameters may move — LoRA's low-rank adapters, or sparse-memory finetuning that edits only a handful of memory slots — is what turns catastrophic forgetting into a rounding error: the <b>−89% → −71% → −11%</b> ladder on NaturalQuestions is <em>entirely</em> a Locus effect.</p>
+<p><b>Second, in-context learning is a genuinely new dial position: learning with no weight update at all.</b> The context behaves like a rank-1 edit to the first MLP weight matrix (Dherin et al., 2025),</p>
+<div class="eq">ΔW = W · A(C, x) · xᵀ / ‖x‖²</div>
+<p>so its Pace is a single forward pass, its Anchor is <span class="mono">θ<sub>pretrained</sub></span> exactly, and its Evidence is whatever fits in the prompt. It is the fastest, most reversible dial we have — and the most transient: the trace is discarded the moment the context is evicted.</p>
+<p><b>What is left is not compute alone.</b> Yes, retraining a frontier model continuously is expensive, and someone has to own the update loop — those are real barriers, and underrated ones. But there is also a genuine unsolved <em>technical</em> problem underneath, which is the same one that shows up everywhere the moment you try to make learning permanent.</p>
+</div>
+
+<h2>The invariant nobody has escaped</h2>
+<div class="note">
+Every <b>fast</b> mechanism is transient — in-context learning is discarded at eviction, test-time training at the end of the sequence, an agent's scratchpad at the end of the episode. Every <b>persistent</b> mechanism is destructive — fine-tuning, model editing, even self-generated edits degrade earlier tasks as they accumulate. Nothing yet moves a trace from fast to slow <em>without collateral damage</em>. That is what sleep does for brains and what no deployed system does. It is the problem actually worth working on — and the reason "just fine-tune it continuously" is not the answer.
+</div>
+<p>There is also a conservation law you can feel in the game: within a single tier, retention and adaptation trade against a fixed evidence budget. The only way out is to <em>partition</em> — run several tiers at different clocks — which is what every serious 2026 proposal, from sparse-memory finetuning to Nested Learning, is quietly doing.</p>
+
+<div class="cta">
+  <h2>Now feel it</h2>
+  <p class="serif">Answer six questions and watch five learners — the same frozen embeddings, one dial apart — predict what you'll like next, then come apart the moment your taste shifts. The whole framework, in about a minute of clicking.</p>
+  <a class="btn" href="./">Play The Forgetting Machine →</a>
+</div>
+
+<div class="foot">
+  <p><b>Key sources.</b> McMahan et al., <em>Ad Click Prediction: a View from the Trenches</em> (KDD 2013). Kirkpatrick et al., <em>Overcoming Catastrophic Forgetting</em> (PNAS 2017). Kumar et al., <em>Fine-Tuning can Distort Pretrained Features</em> — LP-FT (ICLR 2022). Ramasesh et al., <em>Effect of Scale on Catastrophic Forgetting</em> (ICLR 2022). van de Ven et al., <em>Three types of incremental learning</em> (Nat. Mach. Intell. 2022). Dherin et al., arXiv:2507.16003 (in-context learning as a rank-1 update). Sparse memory finetuning, arXiv:2510.15103. Nested Learning / Continuum Memory System, arXiv:2512.24695.</p>
+  <p>Everything runs client-side. Code and the full build notes: <a href="https://github.com/ravimeduri76/continual-learning">github.com/ravimeduri76/continual-learning</a>.</p>
+</div>
+</div>
+</body>
+</html>
