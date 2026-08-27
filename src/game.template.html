@@ -163,7 +163,9 @@ header p{color:var(--ink-2); font-family:"Newsreader",serif; font-size:1.12rem; 
 .star:hover{transform:scale(1.12)} .star.on{color:var(--warn)}
 .fcomment{margin-top:13px; width:100%; max-width:440px; padding:10px 12px; border:1px solid var(--rule-strong);
   border-radius:4px; background:var(--surface); color:var(--ink); font-family:inherit; font-size:.9rem}
-.rate-thanks{margin-top:14px; color:var(--good); font-weight:600; font-size:.92rem}
+.rate-thanks{color:var(--good); font-weight:600; font-size:.92rem}
+.rate-hint{color:var(--fast); font-weight:600; font-size:.86rem}
+.btn:disabled{opacity:.55; cursor:default; border-color:var(--good); color:var(--good)}
 
 .note{background:var(--surface-2); border-left:3px solid var(--fast); padding:15px 18px; border-radius:0 4px 4px 0;
   font-family:"Newsreader",serif; font-size:1.02rem; color:var(--ink-2); margin:18px 0}
@@ -569,8 +571,12 @@ function predictView(){
     <div class="rate">
       <div class="lbl">how well did it read you? <span style="color:var(--faint); text-transform:none; letter-spacing:0">(1 = way off · 5 = uncanny)</span></div>
       <div class="stars" id="stars">${[1,2,3,4,5].map(n=>`<button class="star" data-n="${n}" aria-label="rate ${n} of 5">★</button>`).join('')}</div>
-      <input id="fc" class="fcomment" placeholder="one line first (optional), then tap a star to send" maxlength="140">
-      <div class="rate-thanks hide" id="rthanks">Thanks — that helps.</div>
+      <input id="fc" class="fcomment" placeholder="add a comment (optional), then press Enter or Send" maxlength="200">
+      <div style="display:flex; gap:12px; align-items:center; margin-top:12px">
+        <button class="btn" id="sendfb">Send feedback</button>
+        <span class="rate-hint hide" id="rhint">pick a rating first</span>
+        <span class="rate-thanks hide" id="rthanks">Thanks — saved ✓</span>
+      </div>
     </div>
     <div style="display:flex; gap:10px; margin-top:24px; flex-wrap:wrap">
       <button class="btn primary" id="again">Try another round</button>
@@ -579,24 +585,38 @@ function predictView(){
     </div>
   </div>`;
 
+  // Rating: stars only SELECT; an explicit Send (or Enter in the comment) submits once,
+  // so a comment typed after picking a star is never lost and Enter does the obvious thing.
   const stars = [...app.querySelectorAll('.star')];
-  let chosen = 0;
+  const fc = document.getElementById('fc');
+  const hint = document.getElementById('rhint');
+  const thanks = document.getElementById('rthanks');
+  const sendBtn = document.getElementById('sendfb');
+  let chosen = 0, sent = false;
   const paint = n => stars.forEach(s => s.classList.toggle('on', +s.dataset.n <= n));
   stars.forEach(s => {
-    s.onmouseenter = () => paint(+s.dataset.n);
-    s.onclick = () => {
-      chosen = +s.dataset.n; paint(chosen);
-      submitFeedback({
-        type:'prediction_feedback', rating:chosen,
-        comment:(document.getElementById('fc').value || '').slice(0,140),
-        mode:S.mode, answers:S.log.length,
-        bets:P.items.map(c=>({ bet:c.bet, conf:+c.conf.toFixed(3), item:S.items[c.idx].name || S.items[c.idx].id })),
-        ts:new Date().toISOString(), ua:navigator.userAgent, ref:location.href,
-      });
-      document.getElementById('rthanks').classList.remove('hide');
-    };
+    s.onmouseenter = () => { if (!sent) paint(+s.dataset.n); };
+    s.onclick = () => { if (sent) return; chosen = +s.dataset.n; paint(chosen); hint.classList.add('hide'); };
   });
   app.querySelector('.stars').onmouseleave = () => paint(chosen);
+  const send = () => {
+    if (sent) return;
+    if (!chosen) { hint.classList.remove('hide'); fc.focus(); return; }
+    submitFeedback({
+      type:'prediction_feedback', rating:chosen,
+      comment:(fc.value || '').slice(0,200),
+      mode:S.mode, answers:S.log.length,
+      bets:P.items.map(c=>({ bet:c.bet, conf:+c.conf.toFixed(3), item:S.items[c.idx].name || S.items[c.idx].id })),
+      ts:new Date().toISOString(), ua:navigator.userAgent, ref:location.href,
+    });
+    sent = true;
+    hint.classList.add('hide');
+    thanks.classList.remove('hide');
+    sendBtn.disabled = true; sendBtn.textContent = 'Sent';
+    fc.disabled = true;
+  };
+  sendBtn.onclick = send;
+  fc.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } };
 
   document.getElementById('again').onclick  = () => { reset(S.mode); render(); };
   document.getElementById('menu').onclick   = () => { S = null; render(); };
