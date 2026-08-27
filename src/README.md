@@ -39,6 +39,8 @@ context acts as a rank-1 update ΔW = W·A(C,x)·xᵀ/‖x‖² on the MLP).
     node test_learners.js    synthetic clustered stream, drift, LP-FT probe
     node scan.js             which preference concepts are learnable from 9 examples
     node validate.js         full protocol on the real embeddings, 24 simulated players
+    node twoclock_demo.js    two-clock partition vs the single-clock frontier, 200 worlds
+    node predict_demo.js     from 5 answers, predict a liked 6th & unliked 7th item
 
 ## Reproducing the embeddings
 
@@ -62,3 +64,18 @@ FLAGS, "has green in it" -> "European flags", 9 train / 8 after drift:
 
 Replay retains best and adapts worst; plain SGD does the opposite. That split is Law I —
 within one tier, retention and adaptation trade against a fixed evidence budget.
+
+## Predict from 5 answers (node predict_demo.js)
+
+Top-1 / bottom-1 of the ranked pool = predicted 6th (liked) & 7th (unliked) item,
+400 draws x 4 concepts per mode, best-of-pack learner:
+
+                    6th liked   7th unliked   both   random-pick both
+    shapes             91%          98%        89%        21%
+    flags              77%          92%        71%        23%
+    people             68%          86%        59%        21%
+
+The liked prediction is the hard one (base like-rate ~30%); all three modes clear it
+decisively. People is weakest — text descriptors are the least separable, five examples
+are genuinely thin there. Holds only when the 5 answers contain both a like and a
+dislike, which farthest-point sampling delivers 86-97% of the time.
