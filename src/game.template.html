@@ -145,6 +145,18 @@ header p{color:var(--ink-2); font-family:"Newsreader",serif; font-size:1.12rem; 
 .pos{color:var(--good)} .neg{color:var(--fast)}
 .tablewrap{overflow-x:auto}
 
+/* ---------- prediction reveal ---------- */
+.reveal{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px}
+@media (max-width:640px){ .reveal{grid-template-columns:1fr} }
+.rev{border:1px solid var(--rule); border-radius:5px; padding:18px 16px; text-align:center;
+  background:var(--surface); box-shadow:var(--shadow)}
+.rev.hit{border-color:var(--good)} .rev.miss{border-color:var(--fast)}
+.rev .specimen{width:158px; height:158px; margin:0 auto 12px}
+.rev .person{padding:12px} .rev .person .nm{font-size:1.05rem} .rev .person .ds{font-size:.78rem}
+.rev .verdict{font-family:"Spline Sans Mono",monospace; font-size:.76rem; color:var(--muted); margin-top:5px}
+.rev .verdict b{color:var(--ink-2)}
+.rev .big{font-size:1.15rem; font-weight:700; margin-top:11px; letter-spacing:-.01em}
+
 .note{background:var(--surface-2); border-left:3px solid var(--fast); padding:15px 18px; border-radius:0 4px 4px 0;
   font-family:"Newsreader",serif; font-size:1.02rem; color:var(--ink-2); margin:18px 0}
 .note b{font-family:"Archivo",sans-serif; font-weight:600; color:var(--ink)}
@@ -291,7 +303,7 @@ function reset(mode){
     log: [],                 // {i,y,act}  training answers only
     test1: [], test2: [],    // {i,y,pred:{...}}  never trained on
     dials: { eta:0.9, lambda:0.12, gamma:1.0, adapter:false },
-    ph: null, phSeries: [],
+    ph: null, phSeries: [], pick: null,
   };
   rebuild();
 }
@@ -373,6 +385,7 @@ function render(){
   if (!S) return menu();
   if (S.phase==='train1' || S.phase==='train2') return question();
   if (S.phase==='test1'  || S.phase==='test2')  return question();
+  if (S.phase==='predict') return predictView();
   if (S.phase==='result1') return result1();
   if (S.phase==='drift')   return driftCard();
   if (S.phase==='final')   return final();
@@ -469,7 +482,7 @@ function question(){
     S.idx++;
     if (S.idx >= info.n){
       S.idx = 0;
-      if (S.phase==='train1') S.phase='test1';
+      if (S.phase==='train1') S.phase='predict';
       else if (S.phase==='test1'){ S.phase='result1'; }
       else if (S.phase==='train2') S.phase='test2';
       else S.phase='final';
@@ -482,6 +495,77 @@ function question(){
     if (k==='y'||k==='arrowright') answer(1);
     if (k==='n'||k==='arrowleft')  answer(0);
   };
+}
+
+/* The bet. After Act I, the machine picks the unseen item it is most sure you
+   will like and the one it is most sure you will pass on — by the mean P(yes)
+   across all learners — then keeps them hidden until you have answered. */
+function predictView(){
+  if (!S.pick){
+    const reserved = new Set(S.order);           // never bet on train/test items
+    let like=-1, likeP=-Infinity, dis=-1, disP=Infinity;
+    for (let i=0;i<S.V.length;i++){
+      if (reserved.has(i)) continue;
+      let s=0; for (const m of S.learners) s += m.prob(S.V[i]); s /= S.learners.length;
+      if (s>likeP){ likeP=s; like=i; }
+      if (s<disP){ disP=s; dis=i; }
+    }
+    S.pick = { step:0, items:[{idx:like,bet:1,conf:likeP},{idx:dis,bet:0,conf:disP}], ans:{} };
+  }
+  const P = S.pick, M = MODES[S.mode];
+
+  if (P.step < P.items.length){
+    const it = S.items[P.items[P.step].idx];
+    app.innerHTML = `
+    <div class="panel panel-p" style="margin-top:26px; max-width:60ch; margin-inline:auto">
+      <div class="lbl" style="color:var(--c-twoclock)">the machine places a bet</div>
+      <h2 style="margin:8px 0 6px">An item it has never shown you.</h2>
+      <p class="serif" style="color:var(--ink-2)">From your ${S.log.length} answers it has singled out two items it holds
+        strong opinions about — and it is keeping those opinions to itself until you commit. Bet ${P.step+1} of ${P.items.length}.</p>
+      <div class="stage" style="min-height:auto">
+        ${specimen(S.mode, it)}
+        ${itemCaption(S.mode,it) ? `<div class="caption">${esc(itemCaption(S.mode,it))}</div>` : ''}
+        <div class="ask serif">${M.q1}</div>
+        <div class="choices">
+          <button class="btn yes" data-y="1">Yes<span class="kbd">Y</span></button>
+          <button class="btn no"  data-y="0">No<span class="kbd">N</span></button>
+        </div>
+      </div>
+    </div>`;
+    const answer = (y) => { P.ans[P.step] = y; P.step++; render(); };
+    app.querySelectorAll('[data-y]').forEach(b => b.onclick = () => answer(+b.dataset.y));
+    document.onkeydown = (e) => { const k=e.key.toLowerCase();
+      if (k==='y'||k==='arrowright') answer(1); if (k==='n'||k==='arrowleft') answer(0); };
+    return;
+  }
+
+  const hits = P.items.filter((c,k) => P.ans[k] === c.bet).length;
+  const head = hits===2 ? 'Two from two.' : hits===1 ? 'One from two.' : 'Nought from two.';
+  const sub = hits===2
+      ? 'It has never seen either item, and it called both from your answers alone. That is the whole trick — a preference is a direction in the embedding, and once it has one, it can rank everything it has never shown you.'
+      : hits===1 ? 'One landed, one did not — which is honest for a handful of answers. Re-run and watch the hit rate track how separable the mode is.'
+      : 'Both missed — the honest tail. Some concepts (era, region) simply are not in nine answers, and the machine is not pretending otherwise.';
+  app.innerHTML = `
+  <div class="panel panel-p" style="margin-top:26px">
+    <div class="lbl" style="color:var(--c-twoclock)">the reveal</div>
+    <h2 style="margin:8px 0 4px">${head}</h2>
+    <p class="serif" style="color:var(--ink-2); max-width:72ch">${sub}</p>
+    <div class="reveal">
+      ${P.items.map((c,k) => {
+        const it = S.items[c.idx], ans = P.ans[k], ok = ans === c.bet;
+        const sure = c.bet===1 ? c.conf : 1-c.conf;
+        return `<div class="rev ${ok?'hit':'miss'}">
+          ${specimen(S.mode, it)}
+          <div class="verdict">machine bet <b style="color:${c.bet?'var(--good)':'var(--muted)'}">${c.bet?'LIKE':'PASS'}</b> · ${pct(sure)} sure</div>
+          <div class="verdict">you said <b>${ans?'Yes':'No'}</b></div>
+          <div class="big" style="color:${ok?'var(--good)':'var(--fast)'}">${ok?'✓ called it':'✗ missed'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <button class="btn primary" id="go" style="margin-top:22px">Continue — now the learners guess on six more</button>
+  </div>`;
+  document.getElementById('go').onclick = () => { S.phase='test1'; S.idx=0; render(); };
+  document.onkeydown = null;
 }
 
 function lcard(m, p){

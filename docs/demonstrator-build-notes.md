@@ -6,10 +6,17 @@
 ## What it is
 
 Three modes — Shapes (vision), Flags (vision + text), People (text) — each running the same
-protocol: 9 like/pass answers → 6 held-out predictions → the question silently changes → 8 more
-answers → 6 more predictions → scorecard. Four learners see identical frozen embeddings and
-differ by exactly one dial each. The scorecard ends in live dials that replay the player's whole
-answer history under different settings.
+protocol: 9 like/pass answers → **the machine places two bets** → 6 held-out predictions → the
+question silently changes → 8 more answers → 6 more predictions → scorecard. Five learners see
+identical frozen embeddings; four differ by exactly one dial, the fifth runs two clocks. The
+scorecard ends in live dials that replay the player's whole answer history under different settings.
+
+**The bet (prediction reveal).** Right after Act I, the machine singles out the one unseen item it
+is most sure you will like and the one it is most sure you will pass on — by the mean P(yes) across
+all five learners, over items held out of train and test — and hides those calls until you answer
+both blind. Then it reveals bet + confidence + hit/miss. On the real embeddings this lands 2-for-2
+about 90-98% of the time (`predict_demo.js` measures the underlying capability: 91/77/68% liked by
+mode from just five answers). It is the sense-of-wow moment; it does not feed the scorecard.
 
 ## The four learners (as dial settings)
 
