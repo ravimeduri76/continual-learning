@@ -2,8 +2,9 @@
 
 A framework and a playable demonstrator for continual learning across three regimes:
 classic ML → deep networks → transformers. The point is not to solve catastrophic
-forgetting but to show that forty years of methods are one update rule with five knobs,
-and to make the resulting trade-off something a person can feel in ~25 clicks.
+forgetting but to show that forty years of methods are one update rule with five knobs.
+The public flow is short — 6 answers, two predictions — with an opt-in deeper path that makes
+the retention/adaptation trade-off (drift → backward transfer) something a person can feel.
 
 Two deliverables:
 

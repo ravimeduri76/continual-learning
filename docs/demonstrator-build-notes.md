@@ -4,18 +4,21 @@
 
 ## What it is
 
-Three modes — Shapes (vision), Flags (vision + text), People (text) — each running the same
-protocol: 9 like/pass answers → **the machine places two bets** → 6 held-out predictions → the
-question silently changes → 8 more answers → 6 more predictions → scorecard. Five learners see
-identical frozen embeddings; four differ by exactly one dial, the fifth runs two clocks. The
-scorecard ends in live dials that replay the player's whole answer history under different settings.
+Three modes — Shapes (vision), Flags (vision + text), People (text). The **default (public) flow is
+short**: 6 like/pass answers → two predictions shown up front → done. Five learners see identical
+frozen embeddings; four differ by exactly one dial, the fifth runs two clocks.
 
-**The bet (prediction reveal).** Right after Act I, the machine singles out the one unseen item it
-is most sure you will like and the one it is most sure you will pass on — by the mean P(yes) across
-all five learners, over items held out of train and test — and hides those calls until you answer
-both blind. Then it reveals bet + confidence + hit/miss. On the real embeddings this lands 2-for-2
-about 90-98% of the time (`predict_demo.js` measures the underlying capability: 91/77/68% liked by
-mode from just five answers). It is the sense-of-wow moment; it does not feed the scorecard.
+**The prediction.** After the 6 answers, the mean P(yes) across all five learners is ranked over
+every item held out of train/test, and the two extremes are shown plainly — the item they most
+expect you to like and the one to pass on, with confidence. No blind-answer-then-grade, no
+self-congratulation; the player judges the read, and a 1–5 rating captures it. On the real
+embeddings the top/bottom pick is right ~90–98% of the time (`predict_demo.js`: 91/77/68% liked by
+mode from as few as five answers).
+
+**The deeper path (opt-in).** A link continues into the original long protocol — 6 held-out
+predictions → the question silently changes → 8 more answers → 6 more predictions → a scorecard
+ending in live dials that replay the whole answer history. This is where drift, backward transfer,
+and the two-clock/Law I demonstration live; it is no longer forced on a casual visitor.
 
 ## The four learners (as dial settings)
 

@@ -212,7 +212,7 @@ input[type=range]{width:100%; accent-color:var(--slow)}
   <div class="mast-l">
     <div class="lbl kicker">A continual-learning demonstrator</div>
     <h1>The Forgetting Machine</h1>
-    <p class="serif">Five learners watch the same clicks through the same frozen CLIP embeddings. Four differ by a single dial; the fifth runs two clocks at once. Then the question changes underneath you — and they come apart in exactly the way the theory says they should.</p>
+    <p class="serif">Answer six quick like/pass questions. Five learners — same frozen CLIP embeddings, one dial apart — then pick two things you have never seen: one you will like, one you will not. It works because a preference is just a direction in an embedding.</p>
   </div>
   <div class="masteq mono">θₖ ← θₖ − <b>ηₖ</b>·<b>Πₖ</b>[ ∇ℒ(θ; <b>𝒟ₜ∪ℛₜ</b>) + λₖ<b>Mₖ</b>(θₖ − <b>aₖ</b>) ]</div>
 </header>
@@ -298,7 +298,7 @@ const META = [
 const ADAPTER_META = { id:'adapter', nm:'Head + rank-2 adapter', ac:'var(--c-adapter)',
     dial:'locus widened · watch it distort' };
 
-const N_TRAIN1 = 9, N_TEST1 = 6, N_TRAIN2 = 8, N_TEST2 = 6;
+const N_TRAIN1 = 6, N_TEST1 = 6, N_TRAIN2 = 8, N_TEST2 = 6;
 
 /* ---------------- state ---------------- */
 let S = null;
@@ -425,11 +425,10 @@ function menu(){
   app.innerHTML = `
    <div style="max-width:74ch; margin-top:30px">
      <p class="serif" style="font-size:1.06rem; color:var(--ink-2)">
-       Pick a mode. You will be shown ${N_TRAIN1} items and asked a simple question about each.
-       Then the learners predict ${N_TEST1} you have not seen. Then the question changes — and
-       you answer ${N_TRAIN2} more. At the end you get a scorecard with the metric the continual-learning
-       literature actually cares about: <b>backward transfer</b>, how much each learner lost on the old
-       question while learning the new one.
+       Pick a mode and answer ${N_TRAIN1} simple like/pass questions. Then the learners name two items
+       you have not seen — one they expect you to like, one to pass on — and you judge how well they read you.
+       Curious what happens when your taste shifts halfway through? A longer path picks up from there and ends
+       on <b>backward transfer</b>: how much each learner forgets of the old question while learning a new one.
      </p>
    </div>
    <div class="modes">
@@ -530,9 +529,12 @@ function question(){
 /* The bet. After Act I, the machine picks the unseen item it is most sure you
    will like and the one it is most sure you will pass on — by the mean P(yes)
    across all learners — then keeps them hidden until you have answered. */
+/* The prediction. Made from the training answers, shown up front — the two
+   items the learners most expect you to like / pass on, from everything they
+   were never shown. No self-grading; the player judges the read. */
 function predictView(){
   if (!S.pick){
-    const reserved = new Set(S.order);           // never bet on train/test items
+    const reserved = new Set(S.order);           // never predict on train/test items
     let like=-1, likeP=-Infinity, dis=-1, disP=Infinity;
     for (let i=0;i<S.V.length;i++){
       if (reserved.has(i)) continue;
@@ -540,55 +542,27 @@ function predictView(){
       if (s>likeP){ likeP=s; like=i; }
       if (s<disP){ disP=s; dis=i; }
     }
-    S.pick = { step:0, items:[{idx:like,bet:1,conf:likeP},{idx:dis,bet:0,conf:disP}], ans:{} };
+    S.pick = { items:[{idx:like,bet:1,conf:likeP},{idx:dis,bet:0,conf:disP}] };
   }
-  const P = S.pick, M = MODES[S.mode];
+  const P = S.pick;
 
-  if (P.step < P.items.length){
-    const it = S.items[P.items[P.step].idx];
-    app.innerHTML = `
-    <div class="panel panel-p" style="margin-top:26px; max-width:60ch; margin-inline:auto">
-      <div class="lbl" style="color:var(--c-twoclock)">the machine places a bet</div>
-      <h2 style="margin:8px 0 6px">An item it has never shown you.</h2>
-      <p class="serif" style="color:var(--ink-2)">From your ${S.log.length} answers it has singled out two items it holds
-        strong opinions about — and it is keeping those opinions to itself until you commit. Bet ${P.step+1} of ${P.items.length}.</p>
-      <div class="stage" style="min-height:auto">
-        ${specimen(S.mode, it)}
-        ${itemCaption(S.mode,it) ? `<div class="caption">${esc(itemCaption(S.mode,it))}</div>` : ''}
-        <div class="ask serif">${M.q1}</div>
-        <div class="choices">
-          <button class="btn yes" data-y="1">Yes<span class="kbd">Y</span></button>
-          <button class="btn no"  data-y="0">No<span class="kbd">N</span></button>
-        </div>
-      </div>
-    </div>`;
-    const answer = (y) => { P.ans[P.step] = y; P.step++; render(); };
-    app.querySelectorAll('[data-y]').forEach(b => b.onclick = () => answer(+b.dataset.y));
-    document.onkeydown = (e) => { const k=e.key.toLowerCase();
-      if (k==='y'||k==='arrowright') answer(1); if (k==='n'||k==='arrowleft') answer(0); };
-    return;
-  }
-
-  const hits = P.items.filter((c,k) => P.ans[k] === c.bet).length;
-  const head = hits===2 ? 'Two from two.' : hits===1 ? 'One from two.' : 'Nought from two.';
-  const sub = hits===2
-      ? 'It has never seen either item, and it called both from your answers alone. That is the whole trick — a preference is a direction in the embedding, and once it has one, it can rank everything it has never shown you.'
-      : hits===1 ? 'One landed, one did not — which is honest for a handful of answers. Re-run and watch the hit rate track how separable the mode is.'
-      : 'Both missed — the honest tail. Some concepts (era, region) simply are not in nine answers, and the machine is not pretending otherwise.';
   app.innerHTML = `
   <div class="panel panel-p" style="margin-top:26px">
-    <div class="lbl" style="color:var(--c-twoclock)">the reveal</div>
-    <h2 style="margin:8px 0 4px">${head}</h2>
-    <p class="serif" style="color:var(--ink-2); max-width:72ch">${sub}</p>
+    <div class="lbl" style="color:var(--c-twoclock)">what it made of your ${S.log.length} answers</div>
+    <h2 style="margin:8px 0 4px">Two things it has never shown you.</h2>
+    <p class="serif" style="color:var(--ink-2); max-width:72ch">A preference is just a direction in the embedding.
+      From ${S.log.length} clicks the five learners agree on the extremes — here is the item they most expect
+      you to like, and the one to pass on. You be the judge.</p>
     <div class="reveal">
-      ${P.items.map((c,k) => {
-        const it = S.items[c.idx], ans = P.ans[k], ok = ans === c.bet;
+      ${P.items.map(c => {
+        const it = S.items[c.idx];
         const sure = c.bet===1 ? c.conf : 1-c.conf;
-        return `<div class="rev ${ok?'hit':'miss'}">
+        return `<div class="rev ${c.bet?'hit':''}">
+          <div class="verdict" style="margin-bottom:11px; font-size:.82rem">${c.bet
+            ? 'predicted <b style="color:var(--good)">LIKE</b>'
+            : 'predicted <b style="color:var(--muted)">PASS</b>'} · ${pct(sure)} confident</div>
           ${specimen(S.mode, it)}
-          <div class="verdict">machine bet <b style="color:${c.bet?'var(--good)':'var(--muted)'}">${c.bet?'LIKE':'PASS'}</b> · ${pct(sure)} sure</div>
-          <div class="verdict">you said <b>${ans?'Yes':'No'}</b></div>
-          <div class="big" style="color:${ok?'var(--good)':'var(--fast)'}">${ok?'✓ called it':'✗ missed'}</div>
+          ${itemCaption(S.mode,it) ? `<div class="caption" style="margin-top:10px">${esc(itemCaption(S.mode,it))}</div>` : ''}
         </div>`;
       }).join('')}
     </div>
@@ -596,9 +570,13 @@ function predictView(){
       <div class="lbl">how well did it read you? <span style="color:var(--faint); text-transform:none; letter-spacing:0">(1 = way off · 5 = uncanny)</span></div>
       <div class="stars" id="stars">${[1,2,3,4,5].map(n=>`<button class="star" data-n="${n}" aria-label="rate ${n} of 5">★</button>`).join('')}</div>
       <input id="fc" class="fcomment" placeholder="one line first (optional), then tap a star to send" maxlength="140">
-      <div class="rate-thanks hide" id="rthanks">Thanks — that helps. Carry on.</div>
+      <div class="rate-thanks hide" id="rthanks">Thanks — that helps.</div>
     </div>
-    <button class="btn primary" id="go" style="margin-top:22px">Continue — now the learners guess on six more</button>
+    <div style="display:flex; gap:10px; margin-top:24px; flex-wrap:wrap">
+      <button class="btn primary" id="again">Try another round</button>
+      <button class="btn ghost" id="menu">Another mode</button>
+      <button class="btn ghost" id="deeper">Go deeper: watch the learners disagree when your taste changes →</button>
+    </div>
   </div>`;
 
   const stars = [...app.querySelectorAll('.star')];
@@ -611,8 +589,8 @@ function predictView(){
       submitFeedback({
         type:'prediction_feedback', rating:chosen,
         comment:(document.getElementById('fc').value || '').slice(0,140),
-        mode:S.mode, hits, answers:S.log.length,
-        bets:P.items.map((c,k)=>({ bet:c.bet, conf:+c.conf.toFixed(3), youSaid:P.ans[k], correct:P.ans[k]===c.bet })),
+        mode:S.mode, answers:S.log.length,
+        bets:P.items.map(c=>({ bet:c.bet, conf:+c.conf.toFixed(3), item:S.items[c.idx].name || S.items[c.idx].id })),
         ts:new Date().toISOString(), ua:navigator.userAgent, ref:location.href,
       });
       document.getElementById('rthanks').classList.remove('hide');
@@ -620,7 +598,9 @@ function predictView(){
   });
   app.querySelector('.stars').onmouseleave = () => paint(chosen);
 
-  document.getElementById('go').onclick = () => { S.phase='test1'; S.idx=0; render(); };
+  document.getElementById('again').onclick  = () => { reset(S.mode); render(); };
+  document.getElementById('menu').onclick   = () => { S = null; render(); };
+  document.getElementById('deeper').onclick = () => { S.phase='test1'; S.idx=0; render(); };
   document.onkeydown = null;
 }
 
@@ -730,7 +710,7 @@ function result1(){
   app.innerHTML = `
   <div class="panel panel-p" style="margin-top:26px">
     <div class="lbl">end of act I</div>
-    <h2 style="margin:8px 0 4px">Nine answers in.</h2>
+    <h2 style="margin:8px 0 4px">${S.log.length} answers in.</h2>
     <p class="serif" style="color:var(--ink-2); max-width:70ch">${commonalities(1)}</p>
     <div class="res tablewrap"><table>
       <thead><tr><th>learner</th><th>correct on the 6 unseen items</th><th>mean P(your answer)</th><th>N<sub>eff</sub></th><th>total movement</th></tr></thead>
@@ -744,7 +724,7 @@ function result1(){
           <td class="num">${tot.toFixed(2)}</td></tr>`; }).join('')}</tbody>
     </table></div>
     <div class="note">
-      <b>${metaFor(best.id).nm}</b> leads after nine examples${best.id==='proto'
+      <b>${metaFor(best.id).nm}</b> leads after ${S.log.length} examples${best.id==='proto'
         ? ' — which is the expected result, and the uncomfortable one. A closed-form centroid with no gradients beats three gradient learners, and it is structurally what in-context learning does. Nearest-class-mean on a frozen backbone beating elaborate methods is one of the most reliably reproduced findings in the field.'
         : '. Watch whether it holds once the question changes.'}
     </div>
