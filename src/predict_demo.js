@@ -71,10 +71,10 @@ const CONCEPTS = {
     'African':          it => it.continent === 'Africa',
   },
   people: {
-    'sport':          it => it.field === 'sport',
-    'science & tech': it => it.field === 'science' || it.field === 'tech',
-    'historical':     it => it.era === 'historical',
-    'from Europe':    it => it.region === 'Europe',
+    'tech leaders':   it => it.industry === 'tech',
+    'from Asia':      it => it.region === 'Asia',
+    'from Americas':  it => it.region === 'Americas',
+    'polarising':     it => it.polarizing === true,
   },
 };
 

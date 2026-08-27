@@ -73,9 +73,12 @@ Top-1 / bottom-1 of the ranked pool = predicted 6th (liked) & 7th (unliked) item
                     6th liked   7th unliked   both   random-pick both
     shapes             91%          98%        89%        21%
     flags              77%          92%        71%        23%
-    people             68%          86%        59%        21%
+    people             70%          67%        42%        25%
 
-The liked prediction is the hard one (base like-rate ~30%); all three modes clear it
-decisively. People is weakest — text descriptors are the least separable, five examples
-are genuinely thin there. Holds only when the 5 answers contain both a like and a
-dislike, which farthest-point sampling delivers 86-97% of the time.
+Shapes and flags clear the liked prediction decisively (base like-rate ~30%). People
+(contemporary business leaders) is deliberately harder: the roster mixes admired and
+polarising figures so the base "admire" rate sits near 50% — the point is that opinion
+splits, unlike the old celebrity set where almost everyone was likable. Prediction still
+lifts well over chance (70% vs 51% base), strongest along industry (tech vs not) and
+region. Holds when the answers contain both a like and a dislike — for people that is
+100% of draws, since the set guarantees disagreement.

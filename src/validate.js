@@ -32,8 +32,8 @@ const CONCEPTS = {
     B: { label: 'European flags',      f: i => i.continent === 'Europe' },
   },
   people: {
-    A: { label: 'science & tech',      f: i => i.stem },
-    B: { label: 'sports figures',      f: i => i.field === 'sport' },
+    A: { label: 'tech leaders',        f: i => i.industry === 'tech' },
+    B: { label: 'from Asia',           f: i => i.region === 'Asia' },
   },
 };
 

@@ -4,7 +4,7 @@
 
 ## What it is
 
-Three modes — Shapes (vision), Flags (vision + text), People (text). The **default (public) flow is
+Three modes — Shapes (vision), Flags (vision + text), Business leaders (text). The **default (public) flow is
 short**: 6 like/pass answers → two predictions shown up front → done. Five learners see identical
 frozen embeddings; four differ by exactly one dial, the fifth runs two clocks.
 
@@ -12,7 +12,7 @@ frozen embeddings; four differ by exactly one dial, the fifth runs two clocks.
 every item held out of train/test, and the two extremes are shown plainly — the item they most
 expect you to like and the one to pass on, with confidence. No blind-answer-then-grade, no
 self-congratulation; the player judges the read, and a 1–5 rating captures it. On the real
-embeddings the top/bottom pick is right ~90–98% of the time (`predict_demo.js`: 91/77/68% liked by
+embeddings the top/bottom pick is right ~90–98% of the time for shapes/flags (`predict_demo.js`: 91/77% liked; business leaders 70% over a 51% base, by
 mode from as few as five answers).
 
 **The deeper path (opt-in).** A link continues into the original long protocol — 6 held-out
@@ -42,9 +42,12 @@ quantised. Bundle is 557 KB, page is 606 KB total.
 ```
 shapes/family   0.615 / -0.081  gap 0.697      flags/continent 0.413 / -0.084  gap 0.497
 shapes/count    0.270 / -0.977  gap 1.247      flags/bands     0.220 / -0.450  gap 0.671
-shapes/fill     0.327 / -0.322  gap 0.650      people/field    0.450 / -0.131  gap 0.582
-                                               people/era      0.125 / -0.885  gap 1.010
+shapes/fill     0.327 / -0.322  gap 0.650      people/industry 0.582 / -0.089  gap 0.672
+                                               people/region   0.286 / -0.396  gap 0.682
 ```
+(People are contemporary business leaders; the prompt carries an industry cue, so
+`industry` and `region` separate cleanly. `polarizing` scores a high gap too, but that is
+mostly industry correlation — controversy is not in the text, and it does not predict well.)
 
 ## Which preference concepts are actually learnable from 9 examples
 
@@ -54,8 +57,9 @@ Held-out accuracy, 30 seeds, best learner:
   monochrome 74%; colour-based concepts 67–71%.
 - **Flags** — has green in it 82%, Europe 77%, mostly green 71%, Africa 71%;
   horizontal bands 61% (the weakest — CLIP's flag PCA does not foreground band orientation).
-- **People** — sport 77%, science & tech 73%, politics 69%, musicians 69%;
-  era and "from the Americas" are near chance at n=9.
+- **Business leaders** — tech-vs-not 86%, region (Asia / Americas) 60–94%;
+  rare industries (finance, crypto) are near chance. The set is a deliberate admired/polarising
+  mix so the base admire-rate is ~50% — opinion splits, which is the point.
 
 ## Measured drift behaviour (24 simulated players, real embeddings)
 
@@ -69,8 +73,8 @@ new concept, after        59%    60%    55%    49%
 backward transfer        -27%   -23%   -23%   -11%
 ```
 
-PEOPLE, "science & tech" → "sports figures": replay best retention (−4% BWT), SGD/FTRL best on
-the new concept (68–70%). SHAPES is milder but the same ordering.
+PEOPLE (business leaders), "tech leaders" → "from Asia": replay best retention, SGD/FTRL best on
+the new concept. SHAPES is milder but the same ordering.
 
 **This is the headline result: replay retains best and adapts worst; plain SGD does the exact
 opposite. Law I (conservation), made clickable.**

@@ -45,17 +45,14 @@ const CANDIDATES = {
     'the Americas':        IN('continent', 'North America', 'South America'),
   },
   people: {
-    'science & tech':      i => i.stem,
-    'the arts':            IN('field', 'music', 'film', 'literature', 'art'),
-    'musicians':           IN('field', 'music'),
-    'sport':               IN('field', 'sport'),
-    'politics & activism': IN('field', 'politics'),
-    'writers & artists':   IN('field', 'literature', 'art'),
-    'people alive today':  IN('era', 'contemporary'),
-    'historical figures':  IN('era', 'historical'),
+    'tech leaders':        IN('industry', 'tech'),
+    'finance':             IN('industry', 'finance'),
+    'crypto or finance':   IN('industry', 'crypto', 'finance'),
+    'consumer brands':     IN('industry', 'retail', 'media'),
+    'polarising figures':  i => i.polarizing === true,
     'from Asia':           IN('region', 'Asia'),
-    'from Europe':         IN('region', 'Europe'),
     'from the Americas':   IN('region', 'Americas'),
+    'from Europe':         IN('region', 'Europe'),
   },
 };
 

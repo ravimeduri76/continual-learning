@@ -274,12 +274,12 @@ const MODES = {
     drift:'Same flags, but you are no longer judging the design. You are judging the place. The pixels did not move; the label did.',
   },
   people: {
-    title:'People', kind:'text',
-    blurb:'Public figures as short text descriptors — field, era, region. The least separable of the three modes, where the honest answer is often that nine examples are not enough.',
+    title:'Business leaders', kind:'text',
+    blurb:'Contemporary business leaders as short text descriptors — a deliberate mix of the widely admired and the genuinely polarising, so your like/pass actually splits instead of everyone being likable.',
     probe:'probes the Evidence dial',
-    q1:'Do you admire this person’s work?',
-    q2:'Would you sit through a 20-minute talk by them?',
-    drift:'Admiration and appetite are different functions. Plenty of people you admire you would not want to hear speak, and the reverse is at least as common.',
+    q1:'Do you admire this leader?',
+    q2:'Would you want to work for them?',
+    drift:'Admiring a leader and wanting to work for them are different functions. Plenty you respect from a distance you would not want as a boss, and the reverse happens too.',
   },
 };
 
@@ -395,7 +395,7 @@ function specimen(mode, it){
   return `<div class="specimen"><div class="person">
       <div class="nm">${esc(it.name)}</div>
       <div class="ds">${esc(it.desc)}</div>
-      <div class="ch"><span>${esc(it.field)}</span><span>${esc(it.era)}</span><span>${esc(it.region)}</span></div>
+      <div class="ch"><span>${esc(it.industry)}</span><span>${esc(it.region)}</span>${it.polarizing?`<span style="background:rgba(192,74,46,.14); color:#B23A1E">polarising</span>`:''}</div>
     </div></div>`;
 }
 function itemCaption(mode, it){
@@ -684,7 +684,7 @@ function replayLearners(subset){
 
 /* what did the answers actually have in common? */
 function commonalities(act){
-  const keys = { shapes:['family','fill','colour','count'], flags:['continent','bands'], people:['field','era','region'] }[S.mode];
+  const keys = { shapes:['family','fill','colour','count'], flags:['continent','bands'], people:['industry','region','polarizing'] }[S.mode];
   const liked = S.log.filter(l => l.act===act && l.y===1).map(l => S.items[l.i]);
   const all = S.items;
   if (!liked.length) return 'you said no to everything in this act — a perfectly learnable concept, just an empty one.';
